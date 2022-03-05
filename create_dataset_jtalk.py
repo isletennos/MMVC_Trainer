@@ -25,6 +25,8 @@ def create_dataset(filename):
         lab_file_list = glob.glob(d + "/text/*")
         wav_file_list.sort()
         lab_file_list.sort()
+        if len(wav_file_list) == 0:
+            continue
         counter = 0
         for lab, wav in zip(lab_file_list, wav_file_list):
             with open(lab, 'r') as f:
