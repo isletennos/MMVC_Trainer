@@ -62,8 +62,6 @@ def run(rank, n_gpus, hps):
   dist.init_process_group(backend='nccl', init_method='env://', world_size=n_gpus, rank=rank)
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
-
-  #use text label dataset
   train_dataset = TextAudioSpeakerLoader(hps.data.training_files, hps.data)
   train_sampler = DistributedBucketSampler(
       train_dataset,
@@ -80,25 +78,6 @@ def run(rank, n_gpus, hps):
     eval_loader = DataLoader(eval_dataset, num_workers=8, shuffle=False,
         batch_size=hps.train.batch_size, pin_memory=True,
         drop_last=False, collate_fn=collate_fn)
-
-  #not use text label dataset
-  train_dataset_notext = TextAudioSpeakerLoader(hps.data.training_files_notext, hps.data, True)
-  train_sampler_notext = DistributedBucketSampler(
-      train_dataset_notext,
-      hps.train.batch_size,
-      [32,300,400,500,600,700,800,900,1000],
-      num_replicas=n_gpus,
-      rank=rank,
-      shuffle=True)
-  collate_fn_notext = TextAudioSpeakerCollate(no_text = True)
-  train_loader_notext = DataLoader(train_dataset_notext, num_workers=8, shuffle=False, pin_memory=True,
-      collate_fn=collate_fn_notext, batch_sampler=train_sampler_notext)
-  if rank == 0:
-    eval_dataset_notext = TextAudioSpeakerLoader(hps.data.validation_files_notext, hps.data, False)
-    eval_loader_notext = DataLoader(eval_dataset_notext, num_workers=8, shuffle=False,
-        batch_size=hps.train.batch_size, pin_memory=True,
-        drop_last=False, collate_fn=collate_fn_notext)
-
   net_g = SynthesizerTrn(
       len(symbols),
       hps.data.filter_length // 2 + 1,
@@ -119,13 +98,22 @@ def run(rank, n_gpus, hps):
   net_g = DDP(net_g, device_ids=[rank])
   net_d = DDP(net_d, device_ids=[rank])
 
-  try:
-    _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g)
-    _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "D_*.pth"), net_d, optim_d)
-    global_step = (epoch_str - 1) * len(train_loader)
-  except:
-    epoch_str = 1
-    global_step = 0
+  logger.info('FineTuning : '+str(hps.fine_flag))
+  if hps.fine_flag:
+      logger.info('Load model : '+str(hps.fine_model))
+      _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.data.fine_tuning_model_dir, hps.data.fine_tuning_model_G), net_g, optim_g)
+      _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.data.fine_tuning_model_dir, hps.data.fine_tuning_model_D), net_d, optim_d)
+      epoch_str = 1
+      global_step = 0
+
+  else:
+    try:
+      _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g)
+      _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "D_*.pth"), net_d, optim_d)
+      global_step = (epoch_str - 1) * len(train_loader)
+    except:
+      epoch_str = 1
+      global_step = 0
 
   scheduler_g = torch.optim.lr_scheduler.ExponentialLR(optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str-2)
   scheduler_d = torch.optim.lr_scheduler.ExponentialLR(optim_d, gamma=hps.train.lr_decay, last_epoch=epoch_str-2)
@@ -135,15 +123,8 @@ def run(rank, n_gpus, hps):
   for epoch in range(epoch_str, hps.train.epochs + 1):
     if rank==0:
       train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
-      print("test")
     else:
       train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, None], None, None)
-    scheduler_g.step()
-    scheduler_d.step()
-    if rank==0:
-      train_and_evaluate_notext(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader_notext, eval_loader_notext], logger, [writer, writer_eval])
-    else:
-      train_and_evaluate_notext(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader_notext, None], None, None)
     scheduler_g.step()
     scheduler_d.step()
 
@@ -257,77 +238,6 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
   if rank == 0:
     logger.info('====> Epoch: {}'.format(epoch))
 
-def train_and_evaluate_notext(rank, epoch, hps, nets, optims, schedulers, scaler, loaders, logger, writers):
-  net_g, net_d = nets
-  optim_g, optim_d = optims
-  scheduler_g, scheduler_d = schedulers
-  train_loader, eval_loader = loaders
-  if writers is not None:
-    writer, writer_eval = writers
-
-  train_loader.batch_sampler.set_epoch(epoch)
-
-  net_g.train()
-  net_d.train()
-  for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(train_loader):
-    x, x_lengths = x.cuda(rank, non_blocking=True), x_lengths.cuda(rank, non_blocking=True)
-    spec, spec_lengths = spec.cuda(rank, non_blocking=True), spec_lengths.cuda(rank, non_blocking=True)
-    y, y_lengths = y.cuda(rank, non_blocking=True), y_lengths.cuda(rank, non_blocking=True)
-    speakers = speakers.cuda(rank, non_blocking=True)
-
-    with autocast(enabled=hps.train.fp16_run):
-      y_hat, l_length, attn, ids_slice, x_mask, z_mask,\
-      (z, z_p, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, speakers)
-
-      mel = spec_to_mel_torch(
-          spec, 
-          hps.data.filter_length, 
-          hps.data.n_mel_channels, 
-          hps.data.sampling_rate,
-          hps.data.mel_fmin, 
-          hps.data.mel_fmax)
-      y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
-      y_hat_mel = mel_spectrogram_torch(
-          y_hat.squeeze(1), 
-          hps.data.filter_length, 
-          hps.data.n_mel_channels, 
-          hps.data.sampling_rate, 
-          hps.data.hop_length, 
-          hps.data.win_length, 
-          hps.data.mel_fmin, 
-          hps.data.mel_fmax
-      )
-
-      y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
-
-      # Discriminator
-      y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
-      with autocast(enabled=False):
-        loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(y_d_hat_r, y_d_hat_g)
-        loss_disc_all = loss_disc
-    optim_d.zero_grad()
-    scaler.scale(loss_disc_all).backward()
-    scaler.unscale_(optim_d)
-    grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
-    scaler.step(optim_d)
-
-    with autocast(enabled=hps.train.fp16_run):
-      # Generator
-      y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
-      with autocast(enabled=False):
-        loss_dur = torch.sum(l_length.float()) * 0
-        loss_mel = (F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel) * 0
-        loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
-
-        loss_fm = feature_loss(fmap_r, fmap_g)
-        loss_gen, losses_gen = generator_loss(y_d_hat_g)
-        loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
-    optim_g.zero_grad()
-    scaler.scale(loss_gen_all).backward()
-    scaler.unscale_(optim_g)
-    grad_norm_g = commons.clip_grad_value_(net_g.parameters(), None)
-    scaler.step(optim_g)
-    scaler.update()
  
 def evaluate(hps, generator, eval_loader, writer_eval):
     generator.eval()
