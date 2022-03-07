@@ -1,13 +1,29 @@
 import glob
 import sys
 import os
+import argparse
 import pyopenjtalk
+import json
 
 def mozi2phone(mozi):
     text = pyopenjtalk.g2p(mozi)
     text = "sil " + text + " sil"
     text = text.replace(' ', '-')
     return text
+
+def create_json(filename, num_speakers, sr, config_path):
+    if os.path.exists(config_path):
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    data['data']['training_files'] = 'filelists/' + filename + '_textful.txt'
+    data['data']['validation_files'] = 'filelists/' + filename + '_textful_val.txt'
+    data['data']['training_files_notext'] = 'filelists/' + filename + '_textless.txt'
+    data['data']['validation_files_notext'] = 'filelists/' + filename + '_val_textless.txt'
+    data['data']['sampling_rate'] = sr
+    data['data']['n_speakers'] = num_speakers
+
+    with open("./configs/" + filename + ".json", 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 def create_dataset(filename):
     speaker_id = 0
@@ -67,12 +83,21 @@ def create_dataset(filename):
         f.writelines(output_file_list_val_textless)
     with open('filelists/' + filename + '_Correspondence.txt', 'w', encoding='utf-8', newline='\n') as f:
         f.writelines(Correspondence_list)
+    return speaker_id
 
-def main(argv):
-    filename = str(sys.argv[1])
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--filename', type=str, required=True,
+                        help='filelist for configuration')
+    parser.add_argument('-s', '--sr', type=int, default=24000,
+                        help='sampling rate (default = 24000)')
+    parser.add_argument('-c', '--config', type=str, default="./configs/baseconfig.json",
+                        help='JSON file for configuration')
+    args = parser.parse_args()
+    filename = args.filename
     print(filename)
-    create_dataset(filename)
-    return 0
+    n_spk = create_dataset(filename)
+    create_json(filename, n_spk, args.sr, args.config)
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    main()

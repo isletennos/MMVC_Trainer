@@ -75,12 +75,13 @@ def create_dataset(filename):
         f.writelines(output_file_list_val_textless)
     with open('filelists/' + filename + '_Correspondence.txt', 'w', encoding='utf-8', newline='\n') as f:
         f.writelines(Correspondence_list)
+    return speaker_id -1
 
 def main(argv):
     filename = str(sys.argv[1])
     print(filename)
-    create_dataset(filename)
-    return 0
+    n_spk = create_dataset(filename)
+    return filename, n_spk
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
