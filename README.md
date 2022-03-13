@@ -83,7 +83,7 @@ dataset
     logs/にモデルが生成されます。
 ### 学習したモデルの性能検証
 1. notebookディレクトリにある「RT-MMVC_Interface.ipynb」をgoogle colab 上で実行
-### Q&A
+## Q&A
 順次更新
 ## Note
 なにか不明点があればお気軽にご連絡ください。
