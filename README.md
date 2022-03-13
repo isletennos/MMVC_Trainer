@@ -1,4 +1,4 @@
-#RT-MMVC_Trainer
+RT-MMVC_Trainer
 ====
 
 AIを使ったリアルタイムボイスチェンジャーのモデル学習用ツール
