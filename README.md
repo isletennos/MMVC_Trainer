@@ -6,7 +6,9 @@ AIを使ったリアルタイムボイスチェンジャーのモデル学習用
 ## Description
 AIを使ったリアルタイムボイスチェンジャー「RT-MMVC(RealTime-Many to Many Voice Conversion)」  
 で使用するモデルを学習するためのリポジトリです。  
-google colaboratoryを用いることで、個人の環境に依存せず、かつ簡単に機械学習の学習フェーズを実行可能です。
+google colaboratoryを用いることで、個人の環境に依存せず、かつ簡単に機械学習の学習フェーズを実行可能です。  
+RT-MMVCを実際に動かすClient ↓  
+https://github.com/isletennos/RT-MMVC_Client
 ## concept
 「簡単」「だれでも」「好きな声に」「リアルタイムで」
 ## Demo
