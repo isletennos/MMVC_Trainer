@@ -1,15 +1,15 @@
-RT-MMVC_Trainer
+MMVC_Trainer
 ====
 
 AIを使ったリアルタイムボイスチェンジャーのモデル学習用ツール
 
 ## Description
-AIを使ったリアルタイムボイスチェンジャー「RT-MMVC(RealTime-Many to Many Voice Conversion)」  
+AIを使ったリアルタイムボイスチェンジャー「MMVC(RealTime-Many to Many Voice Conversion)」  
 で使用するモデルを学習するためのリポジトリです。  
 google colaboratoryを用いることで、個人の環境に依存せず、かつ簡単に機械学習の学習フェーズを実行可能です。  
-## RT-MMVC_Client
-RT-MMVCを実際に動かすClient software  
-https://github.com/isletennos/RT-MMVC_Client
+## MMVC_Client
+MMVCを実際に動かすClient software  
+https://github.com/isletennos/MMVC_Client
 ## concept
 「簡単」「だれでも」「好きな声に」「リアルタイムで」
 ## Demo
@@ -88,10 +88,10 @@ dataset
 
     上記2項目を環境に応じて設定ください。
 
-3. notebookディレクトリにある「Train_RT-MMVC.ipynb」をgoogle colab 上で実行してください。  
+3. notebookディレクトリにある「Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
     logs/にモデルが生成されます。
 ### 学習したモデルの性能検証
-1. notebookディレクトリにある「RT-MMVC_Interface.ipynb」をgoogle colab 上で実行
+1. notebookディレクトリにある「MMVC_Interface.ipynb」をgoogle colab 上で実行
 ## Q&A
 Q1. 下記のようなエラーが発生しました。どうしたらよいですか？  
 ```
@@ -112,11 +112,11 @@ Exception:
 Traceback (most recent call last):
   File "/usr/local/lib/python3.7/dist-packages/torch/multiprocessing/spawn.py", line 20, in _wrap
     fn(i, *args)
-  File "/content/drive/MyDrive/RT-MMVC_Trainer/train_ms.py", line 126, in run
+  File "/content/drive/MyDrive/MMVC_Trainer/train_ms.py", line 126, in run
     train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
-  File "/content/drive/MyDrive/RT-MMVC_Trainer/train_ms.py", line 172, in train_and_evaluate
+  File "/content/drive/MyDrive/MMVC_Trainer/train_ms.py", line 172, in train_and_evaluate
     hps.data.mel_fmax
-  File "/content/drive/MyDrive/RT-MMVC_Trainer/mel_processing.py", line 105, in mel_spectrogram_torch
+  File "/content/drive/MyDrive/MMVC_Trainer/mel_processing.py", line 105, in mel_spectrogram_torch
     center=center, pad_mode='reflect', normalized=False, onesided=True)
   File "/usr/local/lib/python3.7/dist-packages/torch/functional.py", line 465, in stft
     return _VF.stft(input, n_fft, hop_length, win_length, window, normalized, onesided)
