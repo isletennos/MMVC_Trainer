@@ -388,12 +388,12 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
             ids_bucket = indices[i]
             num_samples_bucket = self.num_samples_per_bucket[i]
 
-        try:
-            if len_bucket == 0:
-                raise ValueError("length of buckets {} is 0".format(i))
-        except ValueError as e:
-            print(e)
-            exit()
+            try:
+                if len_bucket == 0:
+                    raise ValueError("Exception: length of buckets {} is 0".format(i))
+            except ValueError as e:
+                print(e)
+                exit()
 
         # add extra samples to make it evenly divisible
         rem = num_samples_bucket - len_bucket
