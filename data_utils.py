@@ -219,7 +219,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         # print(filename)
         try:
             if sampling_rate != self.sampling_rate:
-                raise ValueError("source {} SR doesn't match target {} SR".format(
+                raise ValueError("[Error] Exception: source {} SR doesn't match target {} SR".format(
                     sampling_rate, self.sampling_rate))
         except ValueError as e:
             print(e)
@@ -390,7 +390,7 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
 
             try:
                 if len_bucket == 0:
-                    raise ValueError("Exception: length of buckets {} is 0".format(i))
+                    raise ValueError("[Error] Exception: length of buckets {} is 0".format(i))
             except ValueError as e:
                 print(e)
                 exit()
