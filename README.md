@@ -20,65 +20,32 @@ https://github.com/isletennos/MMVC_Client
 このリポジトリをダウンロードして、展開、展開したディレクトリをgoogle drive上にアップロードしてください。
 ## Usage
 ### 学習用のデータセットの作成および配置
-1. 学習用の話者の音声データとその音声データに対応するテキストを用意します。  
-    ターゲットにしたい話者の音声データと変換したい話者の音声データと学習の効率化ために使うその他話者の音声データを用意することを推奨します。  
-    その他話者の音声データには下記コーパス等利用することを推奨します。  
-    
-    
-    下記の公開コーパス等を利用することを推奨します。
-    - JVS (Japanese versatile speech) corpus  
-      contributors : 高道 慎之介様/三井 健太郎様/齋藤 佑樹様/郡山 知樹様/丹治 尚子様/猿渡 洋様  
-      https://sites.google.com/site/shinnosuketakamichi/research-topics/jvs_corpus  
-
-
-   	- ITAコーパス マルチモーダルデータベース  
-      contributors : 金井郁也様/千葉隆壱様/齊藤剛史様/森勢将雅様/小口純矢様/能勢隆様/尾上真惟子様/小田恭央様  
-      CharacterVoice : 東北イタコ(木戸衣吹様)/ずんだもん(伊藤ゆいな様)/四国めたん(田中小雪様)  
-      https://zunko.jp/multimodal_dev/login.php  
-      
-   	- つくよみちゃんコーパス  
-      contributor : 夢前黎様  
-      CharacterVoice : つくよみちゃん(夢前黎様)  
-      https://tyc.rei-yumesaki.net/material/corpus/  
+1. 自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。  
 
 2.下記のようなディレクトリ構成になるように音声データとテキストデータを配置します。
+    textfulの直下には2ディレクトリになります。  
 ```
 dataset
 ├── textful
-│   ├── 000_jvs001
+│   ├── 000_myvoice
 │   │   ├── text
-│   │   │   ├── VOICEACTRESS100_001.txt
-│   │   │   ├── VOICEACTRESS100_002.txt
+│   │   │   ├── s_voice_001.txt
+│   │   │   ├── s_voice_002.txt
 │   │   │   ├── ...
 │   │   └── wav
-│   │        ├── VOICEACTRESS100_001.wav
-│   │        ├── VOICEACTRESS100_002.wav
+│   │        ├── s_voice_001.wav
+│   │        ├── s_voice_002.wav
 │   │        ├── ...
-│   ├── 001_jvs002
-│   │   ├── text
-│   │   │   ├── VOICEACTRESS100_001.txt
-│   │   │   ├── VOICEACTRESS100_002.txt
-│   │   │   ├── ...
-│   │   └── wav
-│   │        ├── VOICEACTRESS100_001.wav
-│   │        ├── VOICEACTRESS100_002.wav
-│   │        ├── ...
-│   ├── 002_jvs003
-│   │   ├── text
-│   │   │   ├── VOICEACTRESS100_001.txt
-│   │   │   ├── VOICEACTRESS100_002.txt
-│   │   │   ├── ...
-│   │   └── wav
-│   │        ├── VOICEACTRESS100_001.wav
-│   │        ├── VOICEACTRESS100_002.wav
-│   │        ├── ...
-│   ├── ...
-│   │        
-│   │        
-│   │        
-│ 
-│ 
-│ 
+│   └── 001_target
+│       ├── text
+│       │   ├── t_voice_001.txt
+│       │   ├── t_voice_002.txt
+│       │   ├── ...
+│       └── wav
+│            ├── t_voice_001.wav
+│            ├── t_voice_002.wav
+│            ├── ...      
+│        
 └── textless
 ```
 ### モデルの学習方法
@@ -139,6 +106,23 @@ A1. お手数ですがコンフィグファイル(json)の
 ## Reference
 https://arxiv.org/abs/2106.06103  
 https://github.com/jaywalnut310/vits
+
+## Special thanks
+    下記の公開コーパス等を利用することを推奨します。
+    - JVS (Japanese versatile speech) corpus  
+      contributors : 高道 慎之介様/三井 健太郎様/齋藤 佑樹様/郡山 知樹様/丹治 尚子様/猿渡 洋様  
+      https://sites.google.com/site/shinnosuketakamichi/research-topics/jvs_corpus  
+
+   	- ITAコーパス マルチモーダルデータベース  
+      contributors : 金井郁也様/千葉隆壱様/齊藤剛史様/森勢将雅様/小口純矢様/能勢隆様/尾上真惟子様/小田恭央様  
+      CharacterVoice : 東北イタコ(木戸衣吹様)/ずんだもん(伊藤ゆいな様)/四国めたん(田中小雪様)  
+      https://zunko.jp/multimodal_dev/login.php  
+      
+   	- つくよみちゃんコーパス  
+      contributor : 夢前黎様  
+      CharacterVoice : つくよみちゃん(夢前黎様)  
+      https://tyc.rei-yumesaki.net/material/corpus/  
+
 ## Author
 Isle Tennos  
 Twitter : https://twitter.com/IsleTennos
