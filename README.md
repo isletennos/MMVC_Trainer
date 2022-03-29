@@ -48,8 +48,11 @@ dataset
 └── textless
 ```
 ### モデルの学習方法
-1. notebookディレクトリにある「Create_Configfile.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成
-2. 学習したコンフィグファイル(json)の
+1. 下記リンクより、「G_232000.pth」「D_232000.pth」をダウンロード。
+https://drive.google.com/drive/u/8/folders/1ZZ1tTPuXtwWZugJiMCAjvlz-xPdLQV6M
+2. 「G_232000.pth」「D_232000.pth」をfine_modelに移動。
+3. notebookディレクトリにある「Create_Configfile.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成
+4. 学習したコンフィグファイル(json)の
  
       - "eval_interval"   
         modelを保存する間隔です。
