@@ -395,17 +395,17 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
                 print(e)
                 exit()
 
-        # add extra samples to make it evenly divisible
-        rem = num_samples_bucket - len_bucket
-        ids_bucket = ids_bucket + ids_bucket * (rem // len_bucket) + ids_bucket[:(rem % len_bucket)]
-  
-        # subsample
-        ids_bucket = ids_bucket[self.rank::self.num_replicas]
-  
-        # batching
-        for j in range(len(ids_bucket) // self.batch_size):
-            batch = [bucket[idx] for idx in ids_bucket[j*self.batch_size:(j+1)*self.batch_size]]
-            batches.append(batch)
+            # add extra samples to make it evenly divisible
+            rem = num_samples_bucket - len_bucket
+            ids_bucket = ids_bucket + ids_bucket * (rem // len_bucket) + ids_bucket[:(rem % len_bucket)]
+    
+            # subsample
+            ids_bucket = ids_bucket[self.rank::self.num_replicas]
+    
+            # batching
+            for j in range(len(ids_bucket) // self.batch_size):
+                batch = [bucket[idx] for idx in ids_bucket[j*self.batch_size:(j+1)*self.batch_size]]
+                batches.append(batch)
   
         if self.shuffle:
             batch_ids = torch.randperm(len(batches), generator=g).tolist()
