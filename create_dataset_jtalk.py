@@ -26,7 +26,7 @@ def create_json(filename, num_speakers, sr, config_path):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 def create_dataset(filename):
-    speaker_id = 105
+    speaker_id = 104
     textful_dir_list = glob.glob("dataset/textful/*")
     textless_dir_list = glob.glob("dataset/textless/*")
     textful_dir_list.sort()
