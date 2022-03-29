@@ -139,6 +139,10 @@ A1. お手数ですがコンフィグファイル(json)の
 ## Reference
 https://arxiv.org/abs/2106.06103  
 https://github.com/jaywalnut310/vits
+
+## MMVCコミュニティサーバ(discord)
+開発の最新情報や、不明点のお問合せ、MMVCの活用法などMMVCに関するコミュニティサーバです。  
+https://discord.gg/4A4Q4cv2Vw
 ## Author
 Isle Tennos  
 Twitter : https://twitter.com/IsleTennos
