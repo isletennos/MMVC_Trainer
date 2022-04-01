@@ -107,7 +107,7 @@ A1. お手数ですがコンフィグファイル(json)の
 なにか不明点があればお気軽にご連絡ください。
 ## MMVCコミュニティサーバ(discord)
 開発の最新情報や、不明点のお問合せ、MMVCの活用法などMMVCに関するコミュニティサーバです。  
-https://discord.gg/4A4Q4cv2Vw
+https://discord.gg/PgspuDSTEc
 
 ## Special thanks
 - JVS (Japanese versatile speech) corpus  
