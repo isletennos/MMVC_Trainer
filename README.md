@@ -13,7 +13,7 @@ https://github.com/isletennos/MMVC_Client
 ## concept
 「簡単」「だれでも」「好きな声に」「リアルタイムで」
 ## Demo
-https://www.nicovideo.jp/watch/sm40230761
+https://www.nicovideo.jp/watch/sm40292061
 ## Requirement
 ・Google アカウント
 ## Install
