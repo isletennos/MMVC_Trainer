@@ -36,6 +36,7 @@ detasetにデータが正しく配置されていない場合
 下記はdetasetにデータが正しく配置されていないときのエラーログになります。
 
 size mismatch for emb_g.weight:とエラーが出た場合、ほぼ確実にdetasetの配置ミスです。 ::
+   
    -- Process 0 terminated with the following error:
    Traceback (most recent call last):
    File "/usr/local/lib/python3.7/dist-packages/torch/multiprocessing/spawn.py", line 20, in _wrap
