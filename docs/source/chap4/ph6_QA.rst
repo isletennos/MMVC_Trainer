@@ -86,8 +86,8 @@ size mismatch for emb_g.weight:とエラーが出た場合、ほぼ確実にdeta
 ---------------------------------------------------------------------------
 以下がrt-mmvc-client-GPU.exeでmyprofile.jsonのパスを入力したときに生じるエラーログです ::
    Traceback (most recent call last):
-     File "{あなたのパス}/rt-mmvc-client-GPU.py",line 424,in <module>
-     File "{あなたのパス*/rt-mmvc-client-GPU.py",line 402, in config_get
+      File "{あなたのパス}/rt-mmvc-client-GPU.py",line 424,in <module>
+      File "{あなたのパス*/rt-mmvc-client-GPU.py",line 402, in config_get
    OSError:[Error 22] Invalid argument: "{あなたのパス}/myprofile.json"
 
 | パスを指定する際はなにもつけずに指定してください。
@@ -98,11 +98,11 @@ jsonファイルの記法が間違ってる場合(ローカル版)
 ---------------------------------------------------------------------------
 以下がrt-mmvc-client-GPU.exeでmyprofile.jsonのパスを入力したときに生じるエラーログです ::
    Traceback (most recent call last):
-     File "{あなたのパス}/rt-mmvc-client-GPU.py",line 424,in <module>
-     File "{あなたのパス}/rt-mmvc-client-GPU.py",line 402, in config_get
-     File "{あなたのパス}/json/__init__.py",line 346, in loads
-     File "{あなたのパス}/json/decoder.py",line 357, in decode
-     File "{あなたのパス}/json/decoder.py",line 353, in raw_decode
+      File "{あなたのパス}/rt-mmvc-client-GPU.py",line 424,in <module>
+      File "{あなたのパス}/rt-mmvc-client-GPU.py",line 402, in config_get
+      File "{あなたのパス}/json/__init__.py",line 346, in loads
+      File "{あなたのパス}/json/decoder.py",line 357, in decode
+      File "{あなたのパス}/json/decoder.py",line 353, in raw_decode
    json.decoder.JSONDecodeError:Invalid \escape: line 14 column 15 (char 255)
 
 | jsonファイル内ではパスの「\」を「\\」と表記する必要があります。
