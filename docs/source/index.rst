@@ -9,17 +9,10 @@ Welcome to MMVC !
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   :numbered:
+
    ./chap1
    ./chap2
    ./chap3
    ./chap4
    ./chap5
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
