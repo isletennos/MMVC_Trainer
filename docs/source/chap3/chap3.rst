@@ -10,28 +10,28 @@ https://github.com/isletennos/MMVC_Trainer をダウンロードして、展開�
 | 1)自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。この時、用意する音声(自分の声の音声データ/変換したい声の音声データ共に)は24000Hz 16bit 1chを強く推奨しております。
 | 2)下記のようなディレクトリ構成になるように音声データとテキストデータを配置します。textfulの直下には2ディレクトリになります。 ::
 
-        dataset
-        ├── textful
-        │   ├── 000_myvoice
-        │   │   ├── text
-        │   │   │   ├── s_voice_001.txt
-        │   │   │   ├── s_voice_002.txt
-        │   │   │   ├── ...
-        │   │   └── wav
-        │   │        ├── s_voice_001.wav
-        │   │        ├── s_voice_002.wav
-        │   │        ├── ...
-        │   └── 001_target
-        │       ├── text
-        │       │   ├── t_voice_001.txt
-        │       │   ├── t_voice_002.txt
-        │       │   ├── ...
-        │       └── wav
-        │            ├── t_voice_001.wav
-        │            ├── t_voice_002.wav
-        │            ├── ...      
-        │        
-        └── textless
+    dataset
+    ├── textful
+    │   ├── 000_myvoice
+    │   │   ├── text
+    │   │   │   ├── s_voice_001.txt
+    │   │   │   ├── s_voice_002.txt
+    │   │   │   ├── ...
+    │   │   └── wav
+    │   │        ├── s_voice_001.wav
+    │   │        ├── s_voice_002.wav
+    │   │        ├── ...
+    │   └── 001_target
+    │       ├── text
+    │       │   ├── t_voice_001.txt
+    │       │   ├── t_voice_002.txt
+    │       │   ├── ...
+    │       └── wav
+    │            ├── t_voice_001.wav
+    │            ├── t_voice_002.wav
+    │            ├── ...      
+    │        
+    └── textless
 
 モデルの学習方法
 ---------------------------------------------------------------------------
