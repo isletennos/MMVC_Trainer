@@ -11,8 +11,8 @@ Welcome to MMVC !
    :caption: Contents:
    :numbered:
 
-   ./chap1
-   ./chap2
-   ./chap3
-   ./chap4
-   ./chap5
+   ./chap1/chap1
+   ./chap2/chap2
+   ./chap3/chap3
+   ./chap4/chap4
+   ./chap5/chap5
