@@ -85,6 +85,7 @@ size mismatch for emb_g.weight:とエラーが出た場合、ほぼ確実にdeta
 ファイルの指定方法が間違ってる場合(ローカル版)
 ---------------------------------------------------------------------------
 以下がrt-mmvc-client-GPU.exeでmyprofile.jsonのパスを入力したときに生じるエラーログです ::
+
    Traceback (most recent call last):
       File "{あなたのパス}/rt-mmvc-client-GPU.py",line 424,in <module>
       File "{あなたのパス*/rt-mmvc-client-GPU.py",line 402, in config_get
@@ -97,6 +98,7 @@ size mismatch for emb_g.weight:とエラーが出た場合、ほぼ確実にdeta
 jsonファイルの記法が間違ってる場合(ローカル版)
 ---------------------------------------------------------------------------
 以下がrt-mmvc-client-GPU.exeでmyprofile.jsonのパスを入力したときに生じるエラーログです ::
+
    Traceback (most recent call last):
       File "{あなたのパス}/rt-mmvc-client-GPU.py",line 424,in <module>
       File "{あなたのパス}/rt-mmvc-client-GPU.py",line 402, in config_get
