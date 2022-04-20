@@ -107,7 +107,7 @@ jsonファイルの記法が間違ってる場合(ローカル版)
       File "{あなたのパス}/json/decoder.py",line 353, in raw_decode
    json.decoder.JSONDecodeError:Invalid \escape: line 14 column 15 (char 255)
 
-| jsonファイル内ではパスの「\」を「\\」と表記する必要があります。
+| jsonファイル内ではパスの「\\」を「\\\\」と表記する必要があります。
 |
 
 
