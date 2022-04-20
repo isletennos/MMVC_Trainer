@@ -81,6 +81,8 @@ size mismatch for emb_g.weight:とエラーが出た場合、ほぼ確実にdeta
 | 後で追記
 |
 
+MMVC_Client(rt-mmvc-client-GPU.exe)でエラーが発生する
+==============================================================
 
 ファイルの指定方法が間違ってる場合(ローカル版)
 ---------------------------------------------------------------------------
@@ -97,7 +99,7 @@ size mismatch for emb_g.weight:とエラーが出た場合、ほぼ確実にdeta
 
 jsonファイルの記法が間違ってる場合(ローカル版)
 ---------------------------------------------------------------------------
-以下がrt-mmvc-client-GPU.exeでmyprofile.jsonのパスを入力したときに生じるエラーログです ::
+以下はrt-mmvc-client-GPU.exeで、myprofile.jsonに記述されているパス指定が間違っているときに生じるエラーログです。 ::
 
    Traceback (most recent call last):
       File "{あなたのパス}/rt-mmvc-client-GPU.py",line 424,in <module>
@@ -108,8 +110,14 @@ jsonファイルの記法が間違ってる場合(ローカル版)
    json.decoder.JSONDecodeError:Invalid \escape: line 14 column 15 (char 255)
 
 | jsonファイル内ではパスの「\\」を「\\\\」と表記する必要があります。
-|
 
+path指定の区切り子は下記例のように記述してください。 ::
+
+   "path": {
+     "json":"C:\\Users\\example_user\\Programs\\rt-mmvc_client\\config.json",
+     "model":"C:\\Users\\example_user\\Programs\\rt-mmvc_client\\G_2000.pth",
+     "noise":"C:\\Users\\example_user\\Programs\\rt-mmvc_client\\noise.wav"
+   }
 
 データセットについて
 =============================================
