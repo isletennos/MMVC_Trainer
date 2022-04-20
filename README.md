@@ -70,7 +70,7 @@ https://drive.google.com/drive/u/8/folders/1ZZ1tTPuXtwWZugJiMCAjvlz-xPdLQV6M
 ## Q&A
 下記のリンクをご参考ください。
 それでも解決しない場合はお気軽にコミュニティ or 製作者にお問い合わせください。
-https://t.co/GeDok31xkv
+https://mmvc.readthedocs.io/ja/latest/index.html
 
 順次更新
 ## Note
