@@ -68,48 +68,16 @@ https://drive.google.com/drive/u/8/folders/1ZZ1tTPuXtwWZugJiMCAjvlz-xPdLQV6M
 ### 学習したモデルの性能検証
 1. notebookディレクトリにある「MMVC_Interface.ipynb」をgoogle colab 上で実行
 ## Q&A
-Q1. 下記のようなエラーが発生しました。どうしたらよいですか？  
-```
-Traceback (most recent call last):
-  File "train_ms.py", line 302, in <module>
-    main()
-  File "train_ms.py", line 50, in main
-    mp.spawn(run, nprocs=n_gpus, args=(n_gpus, hps,))
-  File "/usr/local/lib/python3.7/dist-packages/torch/multiprocessing/spawn.py", line 200, in spawn
-    return start_processes(fn, args, nprocs, join, daemon, start_method='spawn')
-  File "/usr/local/lib/python3.7/dist-packages/torch/multiprocessing/spawn.py", line 158, in start_processes
-    while not context.join():
-  File "/usr/local/lib/python3.7/dist-packages/torch/multiprocessing/spawn.py", line 119, in join
-    raise Exception(msg)
-Exception: 
-
--- Process 0 terminated with the following error:
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.7/dist-packages/torch/multiprocessing/spawn.py", line 20, in _wrap
-    fn(i, *args)
-  File "/content/drive/MyDrive/MMVC_Trainer/train_ms.py", line 126, in run
-    train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
-  File "/content/drive/MyDrive/MMVC_Trainer/train_ms.py", line 172, in train_and_evaluate
-    hps.data.mel_fmax
-  File "/content/drive/MyDrive/MMVC_Trainer/mel_processing.py", line 105, in mel_spectrogram_torch
-    center=center, pad_mode='reflect', normalized=False, onesided=True)
-  File "/usr/local/lib/python3.7/dist-packages/torch/functional.py", line 465, in stft
-    return _VF.stft(input, n_fft, hop_length, win_length, window, normalized, onesided)
-RuntimeError: cuFFT doesn't support signals of half type with compute capability less than SM_53, but the device containing input half tensor only has SM_37
-```
-A1. お手数ですがコンフィグファイル(json)の  
-"fp16_run": true,  
-を  
-"fp16_run": false,  
-に変更ください。
-
+下記のリンクをご参考ください。
+それでも解決しない場合はお気軽にコミュニティ or 製作者にお問い合わせください。
+https://t.co/GeDok31xkv
 
 順次更新
 ## Note
 なにか不明点があればお気軽にご連絡ください。
 ## MMVCコミュニティサーバ(discord)
 開発の最新情報や、不明点のお問合せ、MMVCの活用法などMMVCに関するコミュニティサーバです。  
-https://discord.gg/PgspuDSTEc
+https://mmvc.readthedocs.io/ja/latest/index.html
 
 ## Special thanks
 - JVS (Japanese versatile speech) corpus  
