@@ -265,12 +265,14 @@ class Generator(torch.nn.Module):
         self.ups.apply(init_weights)
 
         if gin_channels != 0:
-            self.cond = nn.Conv1d(gin_channels, upsample_initial_channel, 1)
+            #self.cond = nn.Conv1d(gin_channels, upsample_initial_channel, 1)
+            gin_channels = 0
 
     def forward(self, x, g=None):
         x = self.conv_pre(x)
         if g is not None:
-          x = x + self.cond(g)
+          #x = x + self.cond(g)
+          g=None
 
         for i in range(self.num_upsamples):
             x = F.leaky_relu(x, modules.LRELU_SLOPE)
@@ -417,7 +419,6 @@ class SynthesizerTrn(nn.Module):
     super().__init__()
     self.n_vocab = n_vocab
     self.spec_channels = spec_channels
-    self.inter_channels = inter_channels
     self.hidden_channels = hidden_channels
     self.filter_channels = filter_channels
     self.n_heads = n_heads
@@ -531,4 +532,33 @@ class SynthesizerTrn(nn.Module):
     z_hat = self.flow(z_p, y_mask, g=g_tgt, reverse=True)
     o_hat = self.dec(z_hat * y_mask, g=g_tgt)
     return o_hat, y_mask, (z, z_p, z_hat)
+
+  def voice_ra_pa_db(self, y, y_lengths, sid_src, sid_tgt):
+    assert self.n_speakers > 0, "n_speakers have to be larger than 0."
+    g_src = self.emb_g(sid_src).unsqueeze(-1)
+    g_tgt = self.emb_g(sid_tgt).unsqueeze(-1)
+    z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g_src)
+    o_hat = self.dec(z * y_mask, g=g_tgt)
+    return o_hat, y_mask, (z)
+
+  def voice_ra_pa_da(self, y, y_lengths, sid_src, sid_tgt):
+    assert self.n_speakers > 0, "n_speakers have to be larger than 0."
+    g_src = self.emb_g(sid_src).unsqueeze(-1)
+    g_tgt = self.emb_g(sid_tgt).unsqueeze(-1)
+    z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g_src)
+    o_hat = self.dec(z * y_mask, g=g_src)
+    return o_hat, y_mask, (z)
+
+  def voice_conversion_cycle(self, y, y_lengths, sid_src, sid_tgt):
+    assert self.n_speakers > 0, "n_speakers have to be larger than 0."
+    g_src = self.emb_g(sid_src).unsqueeze(-1)
+    g_tgt = self.emb_g(sid_tgt).unsqueeze(-1)
+    z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g_src)
+    z_p = self.flow(z, y_mask, g=g_src)
+    z_hat = self.flow(z_p, y_mask, g=g_tgt, reverse=True)
+    z_p_hat = self.flow(z_hat, y_mask, g=g_tgt)
+    z_hat_hat = self.flow(z_p_hat, y_mask, g=g_src, reverse=True)
+    o_hat = self.dec(z_hat_hat * y_mask, g=g_tgt)
+    return o_hat, y_mask, (z, z_p, z_hat)
+
 
