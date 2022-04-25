@@ -58,6 +58,8 @@ def create_dataset(filename):
             counter = counter +1
         Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
         speaker_id = speaker_id + 1
+        if speaker_id > 108:
+            break
 
     for d in textless_dir_list:
         wav_file_list = glob.glob(d+"/*.wav")
@@ -211,12 +213,12 @@ def main():
     args = parser.parse_args()
     filename = args.filename
     print(filename)
-
-    n_spk = create_dataset(filename)
     if args.zundamon:
-        create_dataset_zundamon(filename, n_spk, args.sr, args.config)
+        n_spk = create_dataset_zundamon(filename)
     else:
-        create_json(filename, n_spk, args.sr, args.config)
+        n_spk = create_dataset(filename)
+    
+    create_json(filename, n_spk, args.sr, args.config)
 
 if __name__ == '__main__':
     main()
