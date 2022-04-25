@@ -48,14 +48,10 @@ community(discord):https://discord.gg/PgspuDSTEc
 JVSコーパスやITAコーパス等を台本にし、100文程度読み上げます。  
 音声の録音ツールは  
 Audacity  
-https://forest.watch.impress.co.jp/library/software/audacity/ 
-
-
+https://forest.watch.impress.co.jp/library/software/audacity/  
 OREMO  
-http://nwp8861.web.fc2.com/soft/oremo/ 
-
-
-等があります。 
+http://nwp8861.web.fc2.com/soft/oremo/  
+等があります。  
 また、録音した音声は**24000Hz 16bit 1ch**である必要があります。 
 
 2. dataset/textful/000_myvoice に音声データとテキストデータを配置します。 
