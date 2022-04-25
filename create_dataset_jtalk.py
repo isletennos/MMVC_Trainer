@@ -138,41 +138,18 @@ def create_dataset_zundamon(filename):
         exit()
     counter = 0
     for lab, wav in zip(lab_file_list, wav_file_list):
-        with open(lab, 'r', encoding="utf-8") as f:
-            mozi = f.read().split("\n")
-        print(str(mozi))
-        test = mozi2phone(str(mozi))
-        print(test)
-        print(wav + "|"+ str(speaker_id) + "|"+ test)
-        if counter % 10 != 0:
-            output_file_list.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
-        else:
-            output_file_list_val.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
-        counter = counter +1
+      with open(lab, 'r', encoding="utf-8") as f:
+          mozi = f.read().split("\n")
+      print(str(mozi))
+      test = mozi2phone(str(mozi))
+      print(test)
+      print(wav + "|"+ str(speaker_id) + "|"+ test)
+      if counter % 10 != 0:
+          output_file_list.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
+      else:
+          output_file_list_val.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
+      counter = counter +1
     Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
-
-    for d in textful_dir_list:
-        wav_file_list = glob.glob(d+"/wav/*.wav")
-        lab_file_list = glob.glob(d + "/text/*.txt")
-        wav_file_list.sort()
-        lab_file_list.sort()
-        if len(wav_file_list) == 0:
-            continue
-        counter = 0
-        for lab, wav in zip(lab_file_list, wav_file_list):
-            with open(lab, 'r', encoding="utf-8") as f:
-                mozi = f.read().split("\n")
-            print(str(mozi))
-            test = mozi2phone(str(mozi))
-            print(test)
-            print(wav + "|"+ str(speaker_id) + "|"+ test)
-            if counter % 10 != 0:
-                output_file_list.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
-            else:
-                output_file_list_val.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
-            counter = counter +1
-        Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
-        speaker_id = speaker_id + 1
 
     for d in textless_dir_list:
         wav_file_list = glob.glob(d+"/*.wav")
