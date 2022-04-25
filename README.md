@@ -87,7 +87,7 @@ dataset
 
 #### Ph2. モデルの学習方法
 1. 下記リンクより、「G_160000.pth」「D_160000.pth」をダウンロード。 
-2. 「G_270000.pth」「D_270000.pth」をfine_modelに配置します。(良く忘れるポイントなので要注意！)  
+2. 「G_160000.pth」「D_160000.pth」をfine_modelに配置します。(良く忘れるポイントなので要注意！)  
 3. notebookディレクトリにある「Create_Configfile_zundamon.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成します  
 4. configsに作成されたtrain_config_zundamon.jsonの  
  
