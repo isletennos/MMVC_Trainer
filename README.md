@@ -109,6 +109,10 @@ https://drive.google.com/drive/folders/1XGpW0loNr1KjMtXVVG3WRd47R_ne6_X2?usp=sha
 1. 自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。    
 この時、用意する音声(自分の声の音声データ/変換したい声の音声データ共に)は**24000Hz 16bit 1ch**を強く推奨しております。  
 
+    九州そらと四国めたんのMMVC用のデータは下記リンクからダウンロードください。  
+    ダウンロード後、2節のように音声データとテキストデータを配置してください。   
+    https://drive.google.com/drive/folders/1ClIUx_2Wv-uNnuW2LlfG7aTHrUaZ2Asx?usp=sharing
+
 2. 下記のようなディレクトリ構成になるように音声データとテキストデータを配置します。  
     textfulの直下には2ディレクトリになります。  
     (1205_zundamonディレクトリは無くても問題ありません) 
