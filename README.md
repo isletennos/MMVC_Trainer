@@ -101,6 +101,7 @@ https://drive.google.com/drive/folders/1XGpW0loNr1KjMtXVVG3WRd47R_ne6_X2?usp=sha
 
 5. notebookディレクトリにある「Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
     logs/にモデルが生成されます。
+
 #### Ph3. 学習したモデルの性能検証
 1. notebookディレクトリにある「MMVC_Interface.ipynb」をgoogle colab 上で実行してください。
 ### 好きなキャラクターの声になる
@@ -110,7 +111,7 @@ https://drive.google.com/drive/folders/1XGpW0loNr1KjMtXVVG3WRd47R_ne6_X2?usp=sha
 
 2. 下記のようなディレクトリ構成になるように音声データとテキストデータを配置します。  
     textfulの直下には2ディレクトリになります。  
-    (1205_zundamonディレクトリは無くても問題ありません)  
+    (1205_zundamonディレクトリは無くても問題ありません) 
 
 ```
 dataset
