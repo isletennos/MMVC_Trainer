@@ -389,7 +389,6 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
             len_bucket = len(bucket)
             ids_bucket = indices[i]
             num_samples_bucket = self.num_samples_per_bucket[i]
-            print(len_bucket)
 
             if len_bucket == 0:
               print("[Warn] Exception: length of buckets {} is 0. ID:{} Skip.".format(i,i))
