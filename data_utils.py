@@ -384,17 +384,16 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
   
         batches = []
         for i in range(len(self.buckets)):
+            next_bucket = (i+1) % len(self.buckets)
             bucket = self.buckets[i]
             len_bucket = len(bucket)
             ids_bucket = indices[i]
             num_samples_bucket = self.num_samples_per_bucket[i]
+            print(len_bucket)
 
-            try:
-                if len_bucket == 0:
-                    raise ValueError("[Error] Exception: length of buckets {} is 0".format(i))
-            except ValueError as e:
-                print(e)
-                exit()
+            if len_bucket == 0:
+              print("[Warn] Exception: length of buckets {} is 0. ID:{} Skip.".format(i,i))
+              continue
 
             # add extra samples to make it evenly divisible
             rem = num_samples_bucket - len_bucket
