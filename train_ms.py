@@ -14,9 +14,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import autocast, GradScaler
 import datetime
 import pytz
+import time
 from tqdm import tqdm
-
-#
 import warnings
 
 
@@ -40,6 +39,10 @@ from losses import (
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from text.symbols import symbols
 
+#stftの警告対策
+warnings.resetwarnings()
+warnings.simplefilter('ignore', UserWarning)
+warnings.simplefilter('ignore', DeprecationWarning)
 
 torch.backends.cudnn.benchmark = True
 global_step = 0
@@ -54,9 +57,6 @@ def main():
   os.environ['MASTER_PORT'] = '80000'
 
   hps = utils.get_hparams()
-  #stftの警告対策
-  warnings.resetwarnings()
-  warnings.simplefilter('ignore', UserWarning)
 
   mp.spawn(run, nprocs=n_gpus, args=(n_gpus, hps,))
 
