@@ -14,17 +14,50 @@ https://github.com/isletennos/MMVC_Client
 「簡単」「だれでも」「好きな声に」「リアルタイムで」
 ## Demo
 https://www.nicovideo.jp/watch/sm40292061
+
+## 利用規約(2022/04/20)
+本ソフトウェアの利用規約は基本的にMITライセンスに準拠します。  
+VRCでの利用などライセンス記載が不可の場合、記載は不要です。  
+ライセンスの記載が可能なプラットフォームでの利用の場合、下記クレジットどちらかををご利用ください。  
+(可能であればパターン2を使ってくれると製作者はうれしいです)  
+
+ライセンスパターン 1　
+```
+Copyright (c) 2021 Isle.Tennos　
+Released under the MIT license　
+https://opensource.org/licenses/mit-license.php
+```
+
+ライセンスパターン 2　
+```
+MMVCv1.x.x(使用バージョン)　
+Copyright (c) 2021 Isle.Tennos　
+Released under the MIT license　
+https://opensource.org/licenses/mit-license.php
+git:https://github.com/isletennos/MMVC_Trainer
+community(discord):https://discord.gg/PgspuDSTEc
+```
 ## Requirement
 ・Google アカウント
 ## Install
 このリポジトリをダウンロードして、展開、展開したディレクトリをgoogle drive上にアップロードしてください。
 ## Usage
-### 学習用のデータセットの作成および配置
-1. 自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。  
-この時、用意する音声(自分の声の音声データ/変換したい声の音声データ共に)は**24000Hz 16bit 1ch**を強く推奨しております。  
+### チュートリアル : ずんだもんになる
+#### Ph1. 自分の音声の録音と音声データの配置
+1. 自分の声の音声データを録音します。  
+JVSコーパスやITAコーパス等を台本にし、100文程度読み上げます。  
+音声の録音ツールは  
+Audacity  
+https://forest.watch.impress.co.jp/library/software/audacity/  
+OREMO  
+http://nwp8861.web.fc2.com/soft/oremo/  
+等があります。  
+また、録音した音声は**24000Hz 16bit 1ch**である必要があります。  
+※MMVC用にテキストを分割したITAコーパスです。ご利用ください。  
+https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing
 
-2. 下記のようなディレクトリ構成になるように音声データとテキストデータを配置します。  
-    textfulの直下には2ディレクトリになります。  
+2. dataset/textful/000_myvoice に音声データとテキストデータを配置します。 
+最終的に下記のようなディレクトリ構成になります。  
 ```
 dataset
 ├── textful
@@ -37,7 +70,11 @@ dataset
 │   │        ├── s_voice_001.wav
 │   │        ├── s_voice_002.wav
 │   │        ├── ...
-│   └── 001_target
+│   │── 001_target
+│   │   ├── text
+│   │   └── wav
+│   │
+│   └── 1205_zundamon
 │       ├── text
 │       │   ├── t_voice_001.txt
 │       │   ├── t_voice_002.txt
@@ -45,71 +82,98 @@ dataset
 │       └── wav
 │            ├── t_voice_001.wav
 │            ├── t_voice_002.wav
-│            ├── ...      
+│            ├── ... 
 │        
 └── textless
 ```
-### モデルの学習方法
-1. 下記リンクより、「G_232000.pth」「D_232000.pth」をダウンロード。
-https://drive.google.com/drive/u/8/folders/1ZZ1tTPuXtwWZugJiMCAjvlz-xPdLQV6M
-2. 「G_232000.pth」「D_232000.pth」をfine_modelに移動。
-3. notebookディレクトリにある「Create_Configfile.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成
-4. 学習したコンフィグファイル(json)の
+
+#### Ph2. モデルの学習方法
+1. 下記リンクより、「G_180000.pth」「D_180000.pth」をダウンロード。 
+https://drive.google.com/drive/folders/1XGpW0loNr1KjMtXVVG3WRd47R_ne6_X2?usp=sharing
+2. 「G_180000.pth」「D_180000.pth」をfine_modelに配置します。(良く忘れるポイントなので要注意！)  
+3. notebookディレクトリにある「Create_Configfile_zundamon.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成します  
+4. configsに作成されたtrain_config_zundamon.jsonの  
  
       - "eval_interval"   
         modelを保存する間隔です。
       - "batch_size"   
         colabで割り当てたGPUに合わせて調整してください。
 
-    上記2項目を環境に応じて設定ください。
+    上記2項目を環境に応じて最適化してください。わからない方はそのままで大丈夫です。  
 
-3. notebookディレクトリにある「Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
+5. notebookディレクトリにある「Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
     logs/にモデルが生成されます。
-### 学習したモデルの性能検証
-1. notebookディレクトリにある「MMVC_Interface.ipynb」をgoogle colab 上で実行
+
+#### Ph3. 学習したモデルの性能検証
+1. notebookディレクトリにある「MMVC_Interface.ipynb」をgoogle colab 上で実行してください。
+### 好きなキャラクターの声になる
+#### Ph1. 自分の音声の録音と音声データの配置 及びターゲット音声データの配置
+1. 自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。    
+この時、用意する音声(自分の声の音声データ/変換したい声の音声データ共に)は**24000Hz 16bit 1ch**を強く推奨しております。  
+
+    九州そらと四国めたんのMMVC用のデータは下記リンクからダウンロードください。  
+    ダウンロード後、2節のように音声データとテキストデータを配置してください。   
+    https://drive.google.com/drive/folders/1ClIUx_2Wv-uNnuW2LlfG7aTHrUaZ2Asx?usp=sharing
+
+2. 下記のようなディレクトリ構成になるように音声データとテキストデータを配置します。  
+    textfulの直下には2ディレクトリになります。  
+    (1205_zundamonディレクトリは無くても問題ありません) 
+
+```
+dataset
+├── textful
+│   ├── 000_myvoice
+│   │   ├── text
+│   │   │   ├── s_voice_001.txt
+│   │   │   ├── s_voice_002.txt
+│   │   │   ├── ...
+│   │   └── wav
+│   │        ├── s_voice_001.wav
+│   │        ├── s_voice_002.wav
+│   │        ├── ...
+│   │── 001_target
+│   │   ├── text
+│   │   │   ├── t_voice_001.txt
+│   │   │   ├── t_voice_002.txt
+│   │   │   ├── ...
+│   │   └── wav
+│   │        ├── t_voice_001.wav
+│   │        ├── t_voice_002.wav
+│   │        ├── ... 
+│   └── 1205_zundamon
+│       ├── text
+│       │   ├── t_voice_001.txt
+│       │   ├── t_voice_002.txt
+│       │   ├── ...
+│       └── wav
+│            ├── t_voice_001.wav
+│            ├── t_voice_002.wav
+│            ├── ... 
+│        
+└── textless
+```
+#### Ph2. モデルの学習方法
+以降、「チュートリアル : ずんだもんになる Ph2.」と同様のため割愛  
+#### Ph3. 学習したモデルの性能検証
+以降、「チュートリアル : ずんだもんになる Ph3.」と同様のため割愛  
 ## Q&A
-Q1. 下記のようなエラーが発生しました。どうしたらよいですか？  
-```
-Traceback (most recent call last):
-  File "train_ms.py", line 302, in <module>
-    main()
-  File "train_ms.py", line 50, in main
-    mp.spawn(run, nprocs=n_gpus, args=(n_gpus, hps,))
-  File "/usr/local/lib/python3.7/dist-packages/torch/multiprocessing/spawn.py", line 200, in spawn
-    return start_processes(fn, args, nprocs, join, daemon, start_method='spawn')
-  File "/usr/local/lib/python3.7/dist-packages/torch/multiprocessing/spawn.py", line 158, in start_processes
-    while not context.join():
-  File "/usr/local/lib/python3.7/dist-packages/torch/multiprocessing/spawn.py", line 119, in join
-    raise Exception(msg)
-Exception: 
-
--- Process 0 terminated with the following error:
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.7/dist-packages/torch/multiprocessing/spawn.py", line 20, in _wrap
-    fn(i, *args)
-  File "/content/drive/MyDrive/MMVC_Trainer/train_ms.py", line 126, in run
-    train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
-  File "/content/drive/MyDrive/MMVC_Trainer/train_ms.py", line 172, in train_and_evaluate
-    hps.data.mel_fmax
-  File "/content/drive/MyDrive/MMVC_Trainer/mel_processing.py", line 105, in mel_spectrogram_torch
-    center=center, pad_mode='reflect', normalized=False, onesided=True)
-  File "/usr/local/lib/python3.7/dist-packages/torch/functional.py", line 465, in stft
-    return _VF.stft(input, n_fft, hop_length, win_length, window, normalized, onesided)
-RuntimeError: cuFFT doesn't support signals of half type with compute capability less than SM_53, but the device containing input half tensor only has SM_37
-```
-A1. お手数ですがコンフィグファイル(json)の  
-"fp16_run": true,  
-を  
-"fp16_run": false,  
-に変更ください。
-
-
-順次更新
+下記サイトをご参考ください。  
+https://mmvc.readthedocs.io/ja/latest/index.html
 ## Note
 なにか不明点があればお気軽にご連絡ください。
 ## MMVCコミュニティサーバ(discord)
 開発の最新情報や、不明点のお問合せ、MMVCの活用法などMMVCに関するコミュニティサーバです。  
 https://discord.gg/PgspuDSTEc
+
+## ITAコーパス マルチモーダルデータベースについて 
+本ソフトウェアで再配布されている  
+・ずんだもん(伊藤ゆいな)  
+・四国めたん(田中小雪)  
+・九州そら(西田望見)  
+の音声データの著作物の権利はSSS合同会社様にあります。  
+本ソフトウェアではSSS合同会社様に許可を頂き、音声データを本ソフトウェア用に改変、再配布を行っております。  
+上記キャラクターの音声を利用する際にはSSS合同会社様の利用規約に同意する必要があります。  
+https://zunko.jp/multimodal_dev/login.php
 
 ## Special thanks
 - JVS (Japanese versatile speech) corpus  

@@ -87,42 +87,43 @@ https://github.com/isletennos/MMVC_Trainer をダウンロードして、展開�
 
 
 2. 下記のようなディレクトリ構成になるように音声データとテキストデータを配置します。textfulの直下には2ディレクトリになります。
+=======
+| 1)自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。この時、用意する音声(自分の声の音声データ/変換したい声の音声データ共に)は24000Hz 16bit 1chを強く推奨しております。
+| 2)下記のようなディレクトリ構成になるように音声データとテキストデータを配置します。textfulの直下には2ディレクトリになります。
+|
+.. code-block::
+dataset
+├── textful
+│   ├── 000_myvoice
+│   │   ├── text
+│   │   │   ├── s_voice_001.txt
+│   │   │   ├── s_voice_002.txt
+│   │   │   ├── ...
+│   │   └── wav
+│   │        ├── s_voice_001.wav
+│   │        ├── s_voice_002.wav
+│   │        ├── ...
+│   │── 001_target
+│   │   ├── text
+│   │   │   ├── t_voice_001.txt
+│   │   │   ├── t_voice_002.txt
+│   │   │   ├── ...
+│   │   └── wav
+│   │        ├── t_voice_001.wav
+│   │        ├── t_voice_002.wav
+│   │        ├── ... 
+│   └── 1205_zundamon
+│       ├── text
+│       │   ├── t_voice_001.txt
+│       │   ├── t_voice_002.txt
+│       │   ├── ...
+│       └── wav
+│            ├── t_voice_001.wav
+│            ├── t_voice_002.wav
+│            ├── ... 
+│        
+└── textless
 
-    dataset
-    ├── textful
-    │   ├── 000_myvoice
-    │   │   ├── text
-    │   │   │   ├── s_voice_001.txt
-    │   │   │   ├── s_voice_002.txt
-    │   │   │   ├── ...
-    │   │   └── wav
-    │   │        ├── s_voice_001.wav
-    │   │        ├── s_voice_002.wav
-    │   │        ├── ...
-    │   └── 001_target
-    │       ├── text
-    │       │   ├── t_voice_001.txt
-    │       │   ├── t_voice_002.txt
-    │       │   ├── ...
-    │       └── wav
-    │            ├── t_voice_001.wav
-    │            ├── t_voice_002.wav
-    │            ├── ...      
-    │        
-    └── textless
-
-モデルの学習方法
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-1. 下記リンクより、「G_232000.pth」「D_232000.pth」をダウンロード。
-    https://drive.google.com/drive/u/8/folders/1ZZ1tTPuXtwWZugJiMCAjvlz-xPdLQV6M
-2. 「G_232000.pth」「D_232000.pth」をfine_modelに移動。
-3. notebookディレクトリにある「Create_Configfile.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成
-4. 下記の2項目を環境に応じて学習したコンフィグファイル(json)で変更してください。
-    * "eval_interval"
-        modelを保存する間隔です
-    * "batch_size"
-        colabで割り当てたGPUに合わせて調整してください。
-5. notebookディレクトリにある「Train_MMVC.ipynb」をgoogle colab 上で実行してください。logs/にモデルが生成されます。
 
 学習したモデルの性能検証、評価
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -131,4 +132,5 @@ https://github.com/isletennos/MMVC_Trainer をダウンロードして、展開�
 
 有志による解説
 ---------------------------------------------------------------------------
-https://www.nicovideo.jp/watch/sm40415108
+│前準備編
+│https://www.nicovideo.jp/watch/sm40415108
