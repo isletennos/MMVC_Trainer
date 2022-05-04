@@ -69,18 +69,24 @@ def run(rank, n_gpus, hps):
   train_sampler = DistributedBucketSampler(
       train_dataset,
       hps.train.batch_size,
-      [32,375,750,1125,1500,1875,2250,2625,3000],
+      [187,375,750,1125,1500,1875,2250,2625,3000],
       num_replicas=n_gpus,
       rank=rank,
       shuffle=True)
   collate_fn = TextAudioSpeakerCollate()
-  train_loader = DataLoader(train_dataset, num_workers=8, shuffle=False, pin_memory=True,
+  train_loader = DataLoader(train_dataset, num_workers=os.cpu_count(), shuffle=False, pin_memory=True,
       collate_fn=collate_fn, batch_sampler=train_sampler)
   if rank == 0:
     eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
-    eval_loader = DataLoader(eval_dataset, num_workers=8, shuffle=False,
-        batch_size=hps.train.batch_size, pin_memory=True,
-        drop_last=False, collate_fn=collate_fn)
+    eval_sampler = DistributedBucketSampler(
+      eval_dataset,
+      hps.train.batch_size,
+      [187,375,750,1125,1500,1875,2250,2625,3000],
+      num_replicas=n_gpus,
+      rank=rank,
+      shuffle=True)
+    eval_loader = DataLoader(eval_dataset, num_workers=os.cpu_count(), shuffle=False, pin_memory=True,
+        collate_fn=collate_fn, batch_sampler=eval_sampler)
   net_g = SynthesizerTrn(
       len(symbols),
       hps.data.filter_length // 2 + 1,
