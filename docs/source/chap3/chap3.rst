@@ -27,8 +27,10 @@ https://github.com/isletennos/MMVC_Trainer をダウンロードして、展開�
        https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing
         
 
-2. dataset/textful/000_myvoice に音声データとテキストデータを配置します。 最終的に下記のようなディレクトリ構成になります。
-   .. code-block::
+2. dataset/textful/000_myvoice に音声データとテキストデータを配置します。
+   | 最終的に下記のようなディレクトリ構成になります。
+   
+   ::
 
       dataset
       ├── textful
@@ -82,9 +84,9 @@ https://github.com/isletennos/MMVC_Trainer をダウンロードして、展開�
 
 自分の音声の録音と音声データの配置 及びターゲット音声データの配置
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 1. 自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。
    | この時、用意する音声(自分の声の音声データ/変換したい声の音声データ共に)は24000Hz 16bit 1chを強く推奨しております。
-
    | 九州そらと四国めたんのMMVC用のデータは下記リンクからダウンロードください。
    | ダウンロード後、2節のように音声データとテキストデータを配置してください。
    | https://drive.google.com/drive/folders/1ClIUx_2Wv-uNnuW2LlfG7aTHrUaZ2Asx?usp=sharing
@@ -94,8 +96,8 @@ https://github.com/isletennos/MMVC_Trainer をダウンロードして、展開�
    | 1)自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。
    | この時、用意する音声(自分の声の音声データ/変換したい声の音声データ共に)は24000Hz 16bit 1chを強く推奨しております。
    | 2)下記のようなディレクトリ構成になるように音声データとテキストデータを配置します。textfulの直下には2ディレクトリになります。
-   |
-   .. code-block::
+   
+   ::
 
       dataset
       ├── textful
