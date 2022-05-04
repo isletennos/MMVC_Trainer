@@ -273,19 +273,20 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
               hps.data.mel_fmin, 
               hps.data.mel_fmax)
           y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
-          y_hat_mel = mel_spectrogram_torch(
-              y_hat.squeeze(1), 
-              hps.data.filter_length, 
-              hps.data.n_mel_channels, 
-              hps.data.sampling_rate, 
-              hps.data.hop_length, 
-              hps.data.win_length, 
-              hps.data.mel_fmin, 
-              hps.data.mel_fmax
-          )
-          batch_num = batch_idx
+        y_hat = y_hat.float()
+        y_hat_mel = mel_spectrogram_torch(
+            y_hat.squeeze(1), 
+            hps.data.filter_length, 
+            hps.data.n_mel_channels, 
+            hps.data.sampling_rate, 
+            hps.data.hop_length, 
+            hps.data.win_length, 
+            hps.data.mel_fmin, 
+            hps.data.mel_fmax
+        )
+        batch_num = batch_idx
 
-          y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
+        y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
 
         with autocast(enabled=hps.train.fp16_run):
           with autocast(enabled=False):
