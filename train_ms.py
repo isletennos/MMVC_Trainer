@@ -3,6 +3,7 @@ import json
 import argparse
 import itertools
 import math
+from psutil import cpu_count
 import torch
 from torch import nn, optim
 from torch.nn import functional as F
@@ -70,6 +71,10 @@ def run(rank, n_gpus, hps):
     writer = SummaryWriter(log_dir=hps.model_dir)
     writer_eval = SummaryWriter(log_dir=os.path.join(hps.model_dir, "eval"))
 
+  cpu_count = os.cpu_count()
+  if cpu_count > 8:
+    cpu_count = 8
+
   dist.init_process_group(backend='nccl', init_method='env://', world_size=n_gpus, rank=rank)
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
@@ -82,7 +87,7 @@ def run(rank, n_gpus, hps):
       rank=rank,
       shuffle=True)
   collate_fn = TextAudioSpeakerCollate()
-  train_loader = DataLoader(train_dataset, num_workers=os.cpu_count(), shuffle=False, pin_memory=True,
+  train_loader = DataLoader(train_dataset, num_workers=cpu_count, shuffle=False, pin_memory=True,
       collate_fn=collate_fn, batch_sampler=train_sampler)
   if rank == 0:
     eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
@@ -93,7 +98,7 @@ def run(rank, n_gpus, hps):
       num_replicas=n_gpus,
       rank=rank,
       shuffle=True)
-    eval_loader = DataLoader(eval_dataset, num_workers=os.cpu_count(), shuffle=False, pin_memory=True,
+    eval_loader = DataLoader(eval_dataset, num_workers=cpu_count, shuffle=False, pin_memory=True,
         collate_fn=collate_fn, batch_sampler=eval_sampler)
   net_g = SynthesizerTrn(
       len(symbols),
