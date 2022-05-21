@@ -17,7 +17,7 @@ import datetime
 import pytz
 import time
 from tqdm import tqdm
-import warnings
+#import warnings
 
 
 import commons
@@ -41,9 +41,9 @@ from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from text.symbols import symbols
 
 #stftの警告対策
-warnings.resetwarnings()
-warnings.simplefilter('ignore', UserWarning)
-warnings.simplefilter('ignore', DeprecationWarning)
+#warnings.resetwarnings()
+#warnings.simplefilter('ignore', UserWarning)
+#warnings.simplefilter('ignore', DeprecationWarning)
 
 torch.backends.cudnn.benchmark = True
 global_step = 0
