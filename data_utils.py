@@ -183,7 +183,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         random.shuffle(self.audiopaths_sid_text)
         self._filter()
 
-    @retry(exceptions=(IOError), tries=10, delay=1)
+    @retry(tries=30, delay=10)
     def _filter(self):
         """
         Filter text & store spec lengths
