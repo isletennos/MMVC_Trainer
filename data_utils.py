@@ -13,6 +13,8 @@ from text import text_to_sequence, cleaned_text_to_sequence
 
 #add
 from retry import retry
+import audiomentations as da
+from scipy.io.wavfile import read
 
 
 class TextAudioLoader(torch.utils.data.Dataset):
@@ -162,7 +164,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         2) normalizes text and converts them to sequences of integers
         3) computes spectrograms from audio files.
     """
-    def __init__(self, audiopaths_sid_text, hparams, no_text = False):
+    def __init__(self, audiopaths_sid_text, hparams, no_text=False, augmentation=False, augmentation_params=None):
         self.audiopaths_sid_text = load_filepaths_and_text(audiopaths_sid_text)
         self.text_cleaners = hparams.text_cleaners
         self.max_wav_value = hparams.max_wav_value
@@ -172,6 +174,17 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         self.win_length     = hparams.win_length
         self.sampling_rate  = hparams.sampling_rate
         self.no_text = no_text
+        self.augmentation = augmentation
+        if augmentation :
+            self.gain_p = augmentation_params.gain_p
+            self.min_gain_in_db = augmentation_params.min_gain_in_db
+            self.max_gain_in_db = augmentation_params.max_gain_in_db
+            self.time_stretch_p = augmentation_params.time_stretch_p
+            self.min_rate = augmentation_params.min_rate
+            self.max_rate = augmentation_params.max_rate
+            self.pitch_shift_p = augmentation_params.pitch_shift_p
+            self.min_semitones = augmentation_params.min_semitones
+            self.max_semitones = augmentation_params.max_semitones
 
         self.cleaned_text = getattr(hparams, "cleaned_text", False)
 
@@ -214,10 +227,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         
     @retry(exceptions=(PermissionError), tries=100, delay=10)
     def get_audio(self, filename):
-        audio, sampling_rate = load_wav_to_torch(filename)
-        # print(sampling_rate)
-        # print(self.sampling_rate)
-        # print(filename)
+        sampling_rate, wav = read(filename)
         try:
             if sampling_rate != self.sampling_rate:
                 raise ValueError("[Error] Exception: source {} SR doesn't match target {} SR".format(
@@ -225,32 +235,22 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         except ValueError as e:
             print(e)
             exit()
+
+        audio_np = np.array(wav, dtype=np.float32)
+        if self.augmentation :
+            transforms = da.Compose( [
+                da.Gain(min_gain_in_db=self.min_gain_in_db, max_gain_in_db=self.max_gain_in_db, p=self.gain_p),
+                da.TimeStretch(min_rate=self.min_rate, max_rate=self.max_rate, leave_length_unchanged=False, p=self.time_stretch_p),
+                da.PitchShift(min_semitones=self.min_semitones, max_semitones=self.max_semitones, p=self.pitch_shift_p)
+            ])
+            audio_np = np.clip(transforms(samples=audio_np, sample_rate=sampling_rate), -self.max_wav_value, self.max_wav_value)
+        audio = torch.from_numpy(audio_np)
         audio_norm = audio / self.max_wav_value
         audio_norm = audio_norm.unsqueeze(0)
-        spec_filename = filename.replace(".wav", ".spec.pt")
-        spec_file_path =os.path.dirname(spec_filename) + "/spec/"+ os.path.basename(spec_filename)
-        if os.path.exists(spec_file_path):
-            #spec = torch.load(spec_file_path)
-            if os.path.isdir(os.path.dirname(spec_filename) + "/spec") == False:
-              os.mkdir(os.path.dirname(spec_filename) + "/spec")
-            spec = spectrogram_torch(audio_norm, self.filter_length,
-                self.sampling_rate, self.hop_length, self.win_length,
-                center=False)
-            spec = torch.squeeze(spec, 0)
-            torch.save(spec, spec_file_path)
-        else:
-            if os.path.isdir(os.path.dirname(spec_filename) + "/spec") == False:
-              os.mkdir(os.path.dirname(spec_filename) + "/spec")
-            spec = spectrogram_torch(audio_norm, self.filter_length,
-                self.sampling_rate, self.hop_length, self.win_length,
-                center=False)
-            spec = torch.squeeze(spec, 0)
-            torch.save(spec, spec_file_path)
-        # spec = spectrogram_torch(audio_norm, self.filter_length,
-        #     self.sampling_rate, self.hop_length, self.win_length,
-        #     center=False)
-        # spec = torch.squeeze(spec, 0)
-        # torch.save(spec, spec_filename)
+        spec = spectrogram_torch(audio_norm, self.filter_length,
+            self.sampling_rate, self.hop_length, self.win_length,
+            center=False)
+        spec = torch.squeeze(spec, 0)
         return spec, audio_norm
 
     def get_text(self, text):
