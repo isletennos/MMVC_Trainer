@@ -237,21 +237,36 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             exit()
 
         audio_np = np.array(wav, dtype=np.float32)
-        if self.augmentation :
-            transforms = da.Compose( [
+        if self.augmentation:
+            # audio(音声波形)は教師信号となるのでノイズは含まずaugmentationのみ行う
+            # spec(スペクトログラム)は入力信号となるのでaugmentationしてさらにノイズを付加する
+            augmentation_filter = da.Compose( [
                 da.Gain(min_gain_in_db=self.min_gain_in_db, max_gain_in_db=self.max_gain_in_db, p=self.gain_p),
                 da.TimeStretch(min_rate=self.min_rate, max_rate=self.max_rate, leave_length_unchanged=False, p=self.time_stretch_p),
                 da.PitchShift(min_semitones=self.min_semitones, max_semitones=self.max_semitones, p=self.pitch_shift_p)
             ])
-            audio_np = np.clip(transforms(samples=audio_np, sample_rate=sampling_rate), -self.max_wav_value, self.max_wav_value)
-        audio = torch.from_numpy(audio_np)
-        audio_norm = audio / self.max_wav_value
-        audio_norm = audio_norm.unsqueeze(0)
-        spec = spectrogram_torch(audio_norm, self.filter_length,
-            self.sampling_rate, self.hop_length, self.win_length,
-            center=False)
-        spec = torch.squeeze(spec, 0)
-        return spec, audio_norm
+            noise_filter = da.Compose( [
+                da.AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.04, p=0.5),
+                da.FrequencyMask(p=0.5)
+            ])
+            audio_augmented = augmentation_filter(samples=audio_np, sample_rate=sampling_rate)
+            audio_noized = noise_filter(samples=audio_augmented, sample_rate=sampling_rate)
+            audio_augmented = np.clip(audio_augmented, -self.max_wav_value, self.max_wav_value)
+            audio_noized = np.clip(audio_noized, -self.max_wav_value, self.max_wav_value)
+            audio_augmented_norm = self.get_normalized_audio(audio_augmented, self.max_wav_value)
+            audio_noized_norm = self.get_normalized_audio(audio_noized, self.max_wav_value)
+            audio = audio_augmented_norm
+            spec = spectrogram_torch(audio_noized_norm, self.filter_length,
+                self.sampling_rate, self.hop_length, self.win_length,
+                center=False)
+            spec = torch.squeeze(spec, 0)
+        else:
+            audio = self.get_normalized_audio(audio_np, self.max_wav_value)
+            spec = spectrogram_torch(audio, self.filter_length,
+                self.sampling_rate, self.hop_length, self.win_length,
+                center=False)
+            spec = torch.squeeze(spec, 0)
+        return spec, audio
 
     def get_text(self, text):
         if self.cleaned_text:
@@ -262,6 +277,12 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             text_norm = commons.intersperse(text_norm, 0)
         text_norm = torch.LongTensor(text_norm)
         return text_norm
+
+    def get_normalized_audio(self, audio_np, max_wav_value):
+        audio = torch.from_numpy(audio_np)
+        audio_norm = audio / max_wav_value
+        audio_norm = audio_norm.unsqueeze(0)
+        return audio_norm
 
     def get_sid(self, sid):
         sid = torch.LongTensor([int(sid)])
