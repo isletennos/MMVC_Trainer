@@ -185,6 +185,10 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             self.pitch_shift_p = augmentation_params.pitch_shift_p
             self.min_semitones = augmentation_params.min_semitones
             self.max_semitones = augmentation_params.max_semitones
+            self.add_gaussian_noise_p = augmentation_params.add_gaussian_noise_p
+            self.min_amplitude = augmentation_params.min_amplitude
+            self.max_amplitude = augmentation_params.max_amplitude
+            self.frequency_mask_p = augmentation_params.frequency_mask_p
 
         self.cleaned_text = getattr(hparams, "cleaned_text", False)
 
@@ -246,8 +250,8 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
                 da.PitchShift(min_semitones=self.min_semitones, max_semitones=self.max_semitones, p=self.pitch_shift_p)
             ])
             noise_filter = da.Compose( [
-                da.AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.04, p=0.5),
-                da.FrequencyMask(p=0.5)
+                da.AddGaussianNoise(min_amplitude=self.min_amplitude, max_amplitude=self.max_amplitude, p=self.add_gaussian_noise_p),
+                da.FrequencyMask(p=self.frequency_mask_p)
             ])
             audio_augmented = augmentation_filter(samples=audio_np, sample_rate=sampling_rate)
             audio_noized = noise_filter(samples=audio_augmented, sample_rate=sampling_rate)
@@ -268,6 +272,12 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             spec = torch.squeeze(spec, 0)
         return spec, audio
 
+    def get_normalized_audio(self, audio_np, max_wav_value):
+        audio = torch.from_numpy(audio_np)
+        audio_norm = audio / max_wav_value
+        audio_norm = audio_norm.unsqueeze(0)
+        return audio_norm
+
     def get_text(self, text):
         if self.cleaned_text:
             text_norm = cleaned_text_to_sequence(text)
@@ -277,12 +287,6 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             text_norm = commons.intersperse(text_norm, 0)
         text_norm = torch.LongTensor(text_norm)
         return text_norm
-
-    def get_normalized_audio(self, audio_np, max_wav_value):
-        audio = torch.from_numpy(audio_np)
-        audio_norm = audio / max_wav_value
-        audio_norm = audio_norm.unsqueeze(0)
-        return audio_norm
 
     def get_sid(self, sid):
         sid = torch.LongTensor([int(sid)])
