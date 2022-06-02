@@ -13,8 +13,8 @@ from text import text_to_sequence, cleaned_text_to_sequence
 
 #add
 from retry import retry
-import audiomentations as da
-from scipy.io.wavfile import read
+import random
+import torchaudio
 
 
 class TextAudioLoader(torch.utils.data.Dataset):
@@ -231,7 +231,8 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         
     @retry(exceptions=(PermissionError), tries=100, delay=10)
     def get_audio(self, filename):
-        sampling_rate, wav = read(filename)
+        # 音声データは±1.0内に正規化したtorchベクトルでunsqueeze(0)で外側1次元くるんだものを扱う
+        audio, sampling_rate = load_wav_to_torch(filename)
         try:
             if sampling_rate != self.sampling_rate:
                 raise ValueError("[Error] Exception: source {} SR doesn't match target {} SR".format(
@@ -239,41 +240,71 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         except ValueError as e:
             print(e)
             exit()
+        audio_norm = self.get_normalized_audio(audio, self.max_wav_value)
 
-        audio_np = np.array(wav, dtype=np.float32)
         if self.augmentation:
-            # audio(音声波形)は教師信号となるのでノイズは含まずaugmentationのみ行う
-            # spec(スペクトログラム)は入力信号となるのでaugmentationしてさらにノイズを付加する
-            augmentation_filter = da.Compose( [
-                da.Gain(min_gain_in_db=self.min_gain_in_db, max_gain_in_db=self.max_gain_in_db, p=self.gain_p),
-                da.TimeStretch(min_rate=self.min_rate, max_rate=self.max_rate, leave_length_unchanged=False, p=self.time_stretch_p),
-                da.PitchShift(min_semitones=self.min_semitones, max_semitones=self.max_semitones, p=self.pitch_shift_p)
-            ])
-            noise_filter = da.Compose( [
-                da.AddGaussianNoise(min_amplitude=self.min_amplitude, max_amplitude=self.max_amplitude, p=self.add_gaussian_noise_p),
-                da.FrequencyMask(p=self.frequency_mask_p)
-            ])
-            audio_augmented = augmentation_filter(samples=audio_np, sample_rate=sampling_rate)
-            audio_noized = noise_filter(samples=audio_augmented, sample_rate=sampling_rate)
-            audio_augmented = np.clip(audio_augmented, -self.max_wav_value, self.max_wav_value)
-            audio_noized = np.clip(audio_noized, -self.max_wav_value, self.max_wav_value)
-            audio_augmented_norm = self.get_normalized_audio(audio_augmented, self.max_wav_value)
-            audio_noized_norm = self.get_normalized_audio(audio_noized, self.max_wav_value)
-            audio = audio_augmented_norm
-            spec = spectrogram_torch(audio_noized_norm, self.filter_length,
+            audio_augmented = self.add_augmentation(audio_norm, sampling_rate)
+            audio_noised = self.add_noise(audio_augmented, sampling_rate)
+            # ノーマライズ後のaugmentationとnoise付加で範囲外になったところを削る
+            audio_augmented = torch.clamp(audio_augmented, -1, 1) 
+            audio_noised = torch.clamp(audio_noised, -1, 1)
+            # audio(音声波形)は教師信号となるのでノイズは含まずaugmentationのみしたものを使用
+            audio_norm = audio_augmented
+            # spec(スペクトログラム)は入力信号となるのでaugmentationしてさらにノイズを付加したものを使用
+            spec = spectrogram_torch(audio_noised, self.filter_length,
                 self.sampling_rate, self.hop_length, self.win_length,
                 center=False)
-            spec = torch.squeeze(spec, 0)
+            spec_noised = self.add_spectrogram_noise(spec)
+            spec = torch.squeeze(spec_noised, 0)
         else:
-            audio = self.get_normalized_audio(audio_np, self.max_wav_value)
-            spec = spectrogram_torch(audio, self.filter_length,
+            spec = spectrogram_torch(audio_norm, self.filter_length,
                 self.sampling_rate, self.hop_length, self.win_length,
                 center=False)
             spec = torch.squeeze(spec, 0)
-        return spec, audio
+        return spec, audio_norm
 
-    def get_normalized_audio(self, audio_np, max_wav_value):
-        audio = torch.from_numpy(audio_np)
+    def add_augmentation(self, audio, sampling_rate):
+        gain_in_db = 0.0
+        if random.random() <= self.gain_p:
+            gain_in_db = random.uniform(self.min_gain_in_db, self.max_gain_in_db)
+        time_stretch_rate = 1.0
+        if random.random() <= self.time_stretch_p:
+            time_stretch_rate = random.uniform(self.min_rate, self.max_rate)
+        pitch_shift_semitones = 0
+        if random.random() <= self.pitch_shift_p:
+            pitch_shift_semitones = random.uniform(self.min_semitones, self.max_semitones) * 100 # 1/100 semitone 単位指定のため
+        augmentation_effects = [
+            ["gain",  f"{gain_in_db}"],
+            ["tempo", f"{time_stretch_rate}"],
+            ["pitch", f"{pitch_shift_semitones}"],
+            ["rate",  f"{sampling_rate}"]
+        ]
+        audio_augmented, _ = torchaudio.sox_effects.apply_effects_tensor(audio, sampling_rate, augmentation_effects)
+        return audio_augmented
+
+    def add_noise(self, audio, sampling_rate):
+        # AddGaussianNoise
+        audio = self.add_gaussian_noise(audio)
+        return audio
+
+    def add_gaussian_noise(self, audio):
+        assert self.min_amplitude >= 0.0
+        assert self.max_amplitude >= 0.0
+        assert self.max_amplitude >= self.min_amplitude
+        if random.random() > self.add_gaussian_noise_p:
+            return audio
+        amplitude = random.uniform(self.min_amplitude, self.max_amplitude)
+        noise = torch.randn(audio.size())
+        noised_audio = audio + amplitude * noise
+        return noised_audio
+
+    def add_spectrogram_noise(self, spec):
+        # FrequencyMask
+        masking = torchaudio.transforms.FrequencyMasking(freq_mask_param=80)
+        masked = masking(spec)
+        return masked
+
+    def get_normalized_audio(self, audio, max_wav_value):
         audio_norm = audio / max_wav_value
         audio_norm = audio_norm.unsqueeze(0)
         return audio_norm
