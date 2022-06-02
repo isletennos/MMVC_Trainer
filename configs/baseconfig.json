@@ -86,5 +86,21 @@
     "n_layers_q": 3,
     "use_spectral_norm": false,
     "gin_channels": 256
+  },
+  "augmentation": {
+    "enable"               : true,
+    "gain_p"               : 0.5,
+    "min_gain_in_db"       : -10,
+    "max_gain_in_db"       :  10,
+    "time_stretch_p"       : 0.5,
+    "min_rate"             : 0.75,
+    "max_rate"             : 1.25,
+    "pitch_shift_p"        : 0.5,
+    "min_semitones"        : -4.0,
+    "max_semitones"        :  4.0,
+    "add_gaussian_noise_p" : 0.5,
+    "min_amplitude"        : 0.001,
+    "max_amplitude"        : 0.04,
+    "frequency_mask_p"     : 0.5
   }
 }
