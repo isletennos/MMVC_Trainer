@@ -17,7 +17,7 @@ import datetime
 import pytz
 import time
 from tqdm import tqdm
-import warnings
+#import warnings
 
 
 import commons
@@ -41,9 +41,9 @@ from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from text.symbols import symbols
 
 #stftの警告対策
-warnings.resetwarnings()
-warnings.simplefilter('ignore', UserWarning)
-warnings.simplefilter('ignore', DeprecationWarning)
+#warnings.resetwarnings()
+#warnings.simplefilter('ignore', UserWarning)
+#warnings.simplefilter('ignore', DeprecationWarning)
 
 torch.backends.cudnn.benchmark = True
 global_step = 0
@@ -78,7 +78,7 @@ def run(rank, n_gpus, hps):
   dist.init_process_group(backend='nccl', init_method='env://', world_size=n_gpus, rank=rank)
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
-  train_dataset = TextAudioSpeakerLoader(hps.data.training_files, hps.data)
+  train_dataset = TextAudioSpeakerLoader(hps.data.training_files, hps.data, augmentation=hps.augmentation.enable, augmentation_params=hps.augmentation)
   train_sampler = DistributedBucketSampler(
       train_dataset,
       hps.train.batch_size,
@@ -90,7 +90,7 @@ def run(rank, n_gpus, hps):
   train_loader = DataLoader(train_dataset, num_workers=cpu_count, shuffle=False, pin_memory=True,
       collate_fn=collate_fn, batch_sampler=train_sampler)
   if rank == 0:
-    eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
+    eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data, augmentation=False)
     eval_sampler = DistributedBucketSampler(
       eval_dataset,
       hps.train.batch_size,
