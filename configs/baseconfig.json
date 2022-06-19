@@ -87,6 +87,9 @@
     "use_spectral_norm": false,
     "gin_channels": 256
   },
+  "others": {
+    "os_type": "linux"
+  },
   "augmentation": {
     "enable"               : true,
     "gain_p"               : 0.5,
