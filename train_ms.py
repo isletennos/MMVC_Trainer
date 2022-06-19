@@ -87,7 +87,7 @@ def run(rank, n_gpus, hps):
   dist.init_process_group(backend=backend_type, init_method='env://', world_size=n_gpus, rank=rank)
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
-  train_dataset = TextAudioSpeakerLoader(hps.data.training_files, hps.data)
+  train_dataset = TextAudioSpeakerLoader(hps.data.training_files, hps.data, augmentation=hps.augmentation.enable, augmentation_params=hps.augmentation)
   train_sampler = DistributedBucketSampler(
       train_dataset,
       hps.train.batch_size,
@@ -99,7 +99,7 @@ def run(rank, n_gpus, hps):
   train_loader = DataLoader(train_dataset, num_workers=cpu_count, shuffle=False, pin_memory=True,
       collate_fn=collate_fn, batch_sampler=train_sampler)
   if rank == 0:
-    eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
+    eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data, augmentation=False)
     eval_sampler = DistributedBucketSampler(
       eval_dataset,
       hps.train.batch_size,
