@@ -100,6 +100,8 @@ def create_dataset_zundamon(filename):
     #paths
     my_path = "dataset/textful/00_myvoice"
     zundamon_path = "dataset/textful/1205_zundamon"
+    print("myvoice : {}".format(str(os.path.isdir(my_path))))
+    print("zundamon_path : {}".format(str(os.path.isdir(zundamon_path))))
 
     #set list wav and text
     #myvoice
@@ -112,7 +114,11 @@ def create_dataset_zundamon(filename):
     if len(wav_file_list) == 0:
         print("Error" + d + "/wav に音声データがありません")
         exit()
+    if len(lab_file_list) == 0:
+        print("Error : " + d + "/text にテキストデータがありません")
+        exit()
     counter = 0
+
     for lab, wav in zip(lab_file_list, wav_file_list):
         with open(lab, 'r', encoding="utf-8") as f:
             mozi = f.read().split("\n")
