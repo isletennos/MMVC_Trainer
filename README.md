@@ -63,7 +63,10 @@ http://nwp8861.web.fc2.com/soft/oremo/
 等があります。  
 また、録音した音声は**24000Hz 16bit 1ch**である必要があります。  
 ※MMVC用にテキストを分割したITAコーパスです。ご利用ください。  
-https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing
+https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing  
+**update!**  
+「ITA_emotion_all_kana.txt」および「ITA_recitation_all_kana.txt」における文末以外の「。」を「、」に変更  
+https://drive.google.com/file/d/1WB-Aw11V7FLukifAaCQ546Y5tGhJIWiV/view?usp=sharing  
 
 2. dataset/textful/000_myvoice に音声データとテキストデータを配置します。 
 最終的に下記のようなディレクトリ構成になります。  
