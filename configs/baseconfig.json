@@ -98,7 +98,7 @@
     "time_stretch_p"       : 0.5,
     "min_rate"             : 0.75,
     "max_rate"             : 1.25,
-    "pitch_shift_p"        : 0.5,
+    "pitch_shift_p"        : 0.0,
     "min_semitones"        : -4.0,
     "max_semitones"        :  4.0,
     "add_gaussian_noise_p" : 0.5,
