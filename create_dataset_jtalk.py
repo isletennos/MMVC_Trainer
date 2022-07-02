@@ -85,7 +85,7 @@ def create_dataset(filename):
         f.writelines(output_file_list_val_textless)
     with open('filelists/' + filename + '_Correspondence.txt', 'w', encoding='utf-8', newline='\n') as f:
         f.writelines(Correspondence_list)
-    return speaker_id
+    return speaker_id + 1
 
 def create_dataset_zundamon(filename):
     textful_dir_list = glob.glob("dataset/textful/*")
