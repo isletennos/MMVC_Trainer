@@ -66,7 +66,7 @@ def run_most_likely_voice():
 
     dummy_source_speaker_id = 109
     #モデルに入れるための加工を行うためにTextAudioSpeakerLoaderを呼び出す
-    eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data)
+    eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data, augmentation=False)
     wav_files = sorted(glob.glob(f"{args.myvoice_path}/*.wav"))
     wav_files = wav_files[:args.sample_voice_num]
     all_data = list()
