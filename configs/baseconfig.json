@@ -36,7 +36,7 @@
     "mel_fmin": 0.0,
     "mel_fmax": null,
     "add_blank": true,
-    "n_speakers": 109,
+    "n_speakers": 110,
     "cleaned_text": false
   },
   "model": {
