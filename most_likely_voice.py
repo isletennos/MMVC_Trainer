@@ -48,8 +48,8 @@ def run_most_likely_voice():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--fine_model_path')
     parser.add_argument('-v', '--myvoice_path', default='./dataset/textful/00_myvoice/wav')
-    parser.add_argument('-c', '--config_path', default='./configs/train_config_zundamon.json')
-    parser.add_argument('-n', '--sample_voice_num', default= 10)
+    parser.add_argument('-c', '--config_path', default='./configs/baseconfig.json')
+    parser.add_argument('-n', '--sample_voice_num', default= 5)
     args = parser.parse_args()
 
     #load config
@@ -66,22 +66,22 @@ def run_most_likely_voice():
 
     dummy_source_speaker_id = 109
     #モデルに入れるための加工を行うためにTextAudioSpeakerLoaderを呼び出す
-    eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data, augmentation=False)
+    eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data, augmentation=False, no_use_textfile = True)
     wav_files = sorted(glob.glob(f"{args.myvoice_path}/*.wav"))
     wav_files = wav_files[:args.sample_voice_num]
     all_data = list()
-    for wav_file in wav_files:
+    for wav_file in tqdm(wav_files):
         data = eval_dataset.get_audio_text_speaker_pair([wav_file, dummy_source_speaker_id, "a"])
         data = TextAudioSpeakerCollate()([data])
         all_data.append(data)
 
     speaker_num = 100
-    loss_mels = np.zeros(speaker_num + 1)
+    loss_mels = np.zeros(speaker_num)
 
-    for target_id in range(0, speaker_num + 1):
+    for target_id in tqdm(range(0, speaker_num)):
         sid_target = torch.LongTensor([target_id])
         print(f"target id: {target_id} / loss mel: ", end="")
-        for x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src in all_data:
+        for x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src in tqdm(all_data):
             result = net_g.voice_conversion(spec, spec_lengths, sid_src=sid_target, sid_tgt=sid_target)
             audio = result[0][0,0].data.cpu().float().numpy()
             loss_mel = mel_loss(spec, audio, hps)
@@ -94,3 +94,6 @@ def run_most_likely_voice():
     top_losses = np.argsort(loss_mels)[:3]
     for target_id in top_losses:
         print(f"target id: {target_id} / ave: {loss_mels[target_id]:.3f}")
+
+if __name__ == "__main__":
+    run_most_likely_voice()
