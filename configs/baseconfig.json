@@ -36,7 +36,7 @@
     "mel_fmin": 0.0,
     "mel_fmax": null,
     "add_blank": true,
-    "n_speakers": 109,
+    "n_speakers": 110,
     "cleaned_text": false
   },
   "model": {
@@ -101,9 +101,9 @@
     "pitch_shift_p"        : 0.0,
     "min_semitones"        : -4.0,
     "max_semitones"        :  4.0,
-    "add_gaussian_noise_p" : 0.5,
+    "add_gaussian_noise_p" : 0.0,
     "min_amplitude"        : 0.001,
     "max_amplitude"        : 0.04,
-    "frequency_mask_p"     : 0.5
+    "frequency_mask_p"     : 0.0
   }
 }
