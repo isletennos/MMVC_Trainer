@@ -28,7 +28,7 @@ def mel_loss(spec, audio, hps):
         hps.data.mel_fmin, 
         hps.data.mel_fmax)
 
-    y_hat = torch.from_numpy(audio).unsqueeze(0).unsqueeze(0)
+    y_hat = audio.unsqueeze(0).unsqueeze(0)
     y_hat = y_hat.float()
     y_hat_mel = mel_spectrogram_torch(
         y_hat.squeeze(1), 
@@ -79,12 +79,13 @@ def run_most_likely_voice():
     loss_mels = np.zeros(speaker_num)
 
     for target_id in tqdm(range(0, speaker_num)):
-        sid_target = torch.LongTensor([target_id])
+        sid_target = torch.LongTensor([target_id]).cuda()
         print(f"target id: {target_id} / loss mel: ", end="")
-        for x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src in tqdm(all_data):
-            result = net_g.voice_conversion(spec, spec_lengths, sid_src=sid_target, sid_tgt=sid_target)
-            audio = result[0][0,0].data.cpu().float().numpy()
-            loss_mel = mel_loss(spec, audio, hps)
+        for data in tqdm(all_data):
+            x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src = [x.cuda() for x in data]
+            result = net_g.cuda().voice_conversion(spec, spec_lengths, sid_src=sid_target, sid_tgt=sid_target)
+            audio = result[0][0,0]
+            loss_mel = mel_loss(spec, audio, hps).data.cpu().float().numpy()
             loss_mels[target_id] += loss_mel
             print(f"{loss_mel:.3f} ", end="")
         loss_mels[target_id] /= len(all_data)
