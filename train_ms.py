@@ -181,7 +181,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     speakers = speakers.cuda(rank, non_blocking=True)
 
     with autocast(enabled=hps.train.fp16_run):
-      y_hat, l_length, attn, ids_slice, x_mask, z_mask,\
+      y_hat, attn, ids_slice, x_mask, z_mask,\
       (z, z_p, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, speakers)
       mel = spec_to_mel_torch(
           spec, 
@@ -219,13 +219,12 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
       # Generator
       y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
       with autocast(enabled=False):
-        loss_dur = torch.sum(l_length.float())
         loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
         loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
         loss_fm = feature_loss(fmap_r, fmap_g)
         loss_gen, losses_gen = generator_loss(y_d_hat_g)
-        loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
+        loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
     optim_g.zero_grad()
     scaler.scale(loss_gen_all).backward()
     scaler.unscale_(optim_g)
@@ -236,7 +235,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     if rank==0:
       if global_step % hps.train.log_interval == 0:
         lr = optim_g.param_groups[0]['lr']
-        losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_dur, loss_kl]
+        losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_kl]
         logger.info('Train Epoch: {} [{:.0f}%]'.format(
           epoch,
           100. * batch_idx / len(train_loader)))
@@ -244,7 +243,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         logger.info([x.item() for x in losses] + [global_step, lr])
         
         scalar_dict = {"loss/g/total": loss_gen_all, "loss/d/total": loss_disc_all, "learning_rate": lr, "grad_norm_d": grad_norm_d, "grad_norm_g": grad_norm_g}
-        scalar_dict.update({"loss/g/fm": loss_fm, "loss/g/mel": loss_mel, "loss/g/dur": loss_dur, "loss/g/kl": loss_kl})
+        scalar_dict.update({"loss/g/fm": loss_fm, "loss/g/mel": loss_mel, "loss/g/kl": loss_kl})
 
         scalar_dict.update({"loss/g/{}".format(i): v for i, v in enumerate(losses_gen)})
         scalar_dict.update({"loss/d_r/{}".format(i): v for i, v in enumerate(losses_disc_r)})
@@ -273,9 +272,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
  
 def evaluate(hps, generator, eval_loader, writer_eval, logger):
-    generator.eval()
     scalar_dict = {}
-    scalar_dict.update({"loss/g/mel": 0.0, "loss/g/dur": 0.0, "loss/g/kl": 0.0})
+    scalar_dict.update({"loss/g/mel": 0.0, "loss/g/kl": 0.0})
     with torch.no_grad():
       #evalのデータセットを一周する
       for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(tqdm(eval_loader, desc="Epoch {}".format("eval"))):
@@ -286,7 +284,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
         #autocastはfp16のおまじない
         with autocast(enabled=hps.train.fp16_run):
           #Generator
-          y_hat, l_length, attn, ids_slice, x_mask, z_mask,\
+          y_hat, attn, ids_slice, x_mask, z_mask,\
           (z, z_p, m_p, logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, speakers)
 
           mel = spec_to_mel_torch(
@@ -314,77 +312,22 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
 
         with autocast(enabled=hps.train.fp16_run):
           with autocast(enabled=False):
-            loss_dur = torch.sum(l_length.float())
             loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
             loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
         scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] + loss_mel
-        scalar_dict["loss/g/dur"] = scalar_dict["loss/g/dur"] + loss_dur
         scalar_dict["loss/g/kl"] = scalar_dict["loss/g/kl"] + loss_kl
       
       #lossをepoch1周の結果をiter単位の平均値に
       scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] / (batch_num+1)
-      scalar_dict["loss/g/dur"] = scalar_dict["loss/g/dur"] / (batch_num+1)
       scalar_dict["loss/g/kl"] = scalar_dict["loss/g/kl"] / (batch_num+1)
-      logger.info("loss/g/mel : {} loss/g/dur : {} loss/g/kl : {}".format(str(scalar_dict["loss/g/mel"]), str(scalar_dict["loss/g/dur"]), str(scalar_dict["loss/g/kl"])))
-
-      #謎の処理
-      for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(eval_loader):
-        x, x_lengths = x.cuda(0), x_lengths.cuda(0)
-        spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
-        y, y_lengths = y.cuda(0), y_lengths.cuda(0)
-        speakers = speakers.cuda(0)
-
-        # remove else
-        x = x[:1]
-        x_lengths = x_lengths[:1]
-        spec = spec[:1]
-        spec_lengths = spec_lengths[:1]
-        y = y[:1]
-        y_lengths = y_lengths[:1]
-        speakers = speakers[:1]
-        break
-
-      y_hat, attn, mask, *_ = generator.module.infer(x, x_lengths, speakers, max_len=1000)
-      y_hat_lengths = mask.sum([1,2]).long() * hps.data.hop_length
-
-      mel = spec_to_mel_torch(
-        spec, 
-        hps.data.filter_length, 
-        hps.data.n_mel_channels, 
-        hps.data.sampling_rate,
-        hps.data.mel_fmin, 
-        hps.data.mel_fmax)
-      y_hat_mel = mel_spectrogram_torch(
-        y_hat.squeeze(1).float(),
-        hps.data.filter_length,
-        hps.data.n_mel_channels,
-        hps.data.sampling_rate,
-        hps.data.hop_length,
-        hps.data.win_length,
-        hps.data.mel_fmin,
-        hps.data.mel_fmax
-      )
-    image_dict = {
-      "gen/mel": utils.plot_spectrogram_to_numpy(y_hat_mel[0].cpu().numpy())
-    }
-    audio_dict = {
-      "gen/audio": y_hat[0,:,:y_hat_lengths[0]]
-    }
-    if global_step == 0:
-      image_dict.update({"gt/mel": utils.plot_spectrogram_to_numpy(mel[0].cpu().numpy())})
-      audio_dict.update({"gt/audio": y[0,:,:y_lengths[0]]})
+      logger.info("loss/g/mel : {} lloss/g/kl : {}".format(str(scalar_dict["loss/g/mel"]), str(scalar_dict["loss/g/kl"])))
 
     utils.summarize(
       writer=writer_eval,
       global_step=global_step, 
-      images=image_dict,
       scalars=scalar_dict,
-      audios=audio_dict,
-      audio_sampling_rate=hps.data.sampling_rate
     )
-    generator.train()
-
                            
 if __name__ == "__main__":
   main()
