@@ -20,9 +20,13 @@ def get_f0(wav_path, fs = 24000, hop = 128):
     return f0
 
 def f0_to_note(f0, borders):
+    print(f0.shape)
+    f0 = f0[0::2]
+    f0 = f0[0::2]
+    print(f0.shape)
     note = np.zeros(f0.shape)
     borders = borders[1:]
-    print(borders)
+
     for i in range(f0.shape[0]):
         for j, border in enumerate(borders):
             if f0[i] < border:
@@ -185,9 +189,9 @@ def create_dataset_zundamon(filename, note_list_path = "note_correspondence.csv"
     for lab, wav in zip(lab_file_list, wav_file_list):
         with open(lab, 'r', encoding="utf-8") as f:
             mozi = f.read().split("\n")
-        print(str(mozi))
+        #print(str(mozi))
         test = mozi2phone(str(mozi))
-        print(test)
+        #print(test)
         note = get_note_text(wav, note_list_path)
         print(wav + "|"+ str(speaker_id) + "|"+ test + "|"+ note)
         if counter % 10 != 0:
@@ -210,9 +214,9 @@ def create_dataset_zundamon(filename, note_list_path = "note_correspondence.csv"
     for lab, wav in zip(lab_file_list, wav_file_list):
         with open(lab, 'r', encoding="utf-8") as f:
             mozi = f.read().split("\n")
-        print(str(mozi))
+        #print(str(mozi))
         test = mozi2phone(str(mozi))
-        print(test)
+        #print(test)
         note = get_note_text(wav, note_list_path)
         print(wav + "|"+ str(speaker_id) + "|"+ test + "|"+ note)
         if counter % 10 != 0:
