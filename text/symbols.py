@@ -17,6 +17,7 @@ symbols = [_pad] + list(_punctuation) + list(_letters) + list(_letters_ipa)
 SPACE_ID = symbols.index(" ")
 
 symbols = [
+    "none",
     "A",
     "E",
     "I",
