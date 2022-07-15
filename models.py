@@ -176,6 +176,49 @@ class TextEncoder(nn.Module):
     m, logs = torch.split(stats, self.out_channels, dim=1)
     return x, m, logs, x_mask
 
+class NoteEncoder(nn.Module):
+  def __init__(self,
+      n_vocab,
+      out_channels,
+      hidden_channels,
+      filter_channels,
+      n_heads,
+      n_layers,
+      kernel_size,
+      p_dropout):
+    super().__init__()
+    self.n_vocab = n_vocab
+    self.out_channels = out_channels
+    self.hidden_channels = hidden_channels
+    self.filter_channels = filter_channels
+    self.n_heads = n_heads
+    self.n_layers = n_layers
+    self.kernel_size = kernel_size
+    self.p_dropout = p_dropout
+
+    self.emb = nn.Embedding(n_vocab, hidden_channels)
+    nn.init.normal_(self.emb.weight, 0.0, hidden_channels**-0.5)
+
+    self.encoder = attentions.Encoder(
+      hidden_channels,
+      filter_channels,
+      n_heads,
+      n_layers,
+      kernel_size,
+      p_dropout)
+    self.proj= nn.Conv1d(hidden_channels, out_channels * 2, 1)
+
+  def forward(self, x, x_lengths):
+    x = self.emb(x) * math.sqrt(self.hidden_channels) # [b, t, h]
+    x = torch.transpose(x, 1, -1) # [b, h, t]
+    x_mask = torch.unsqueeze(commons.sequence_mask(x_lengths, x.size(2)), 1).to(x.dtype)
+
+    x = self.encoder(x * x_mask, x_mask)
+    stats = self.proj(x) * x_mask
+
+    m, logs = torch.split(stats, self.out_channels, dim=1)
+    return x, m, logs, x_mask
+
 
 class ResidualCouplingBlock(nn.Module):
   def __init__(self,
@@ -415,11 +458,13 @@ class SynthesizerTrn(nn.Module):
     n_flow,
     n_speakers=0,
     gin_channels=0,
+    n_note = 79,
     use_sdp=True,
     **kwargs):
 
     super().__init__()
     self.n_vocab = n_vocab
+    self.n_note = n_note
     self.spec_channels = spec_channels
     self.hidden_channels = hidden_channels
     self.filter_channels = filter_channels
@@ -447,6 +492,14 @@ class SynthesizerTrn(nn.Module):
         n_layers,
         kernel_size,
         p_dropout)
+    self.enc_note = TextEncoder(n_note,
+        inter_channels,
+        hidden_channels,
+        filter_channels,
+        n_heads,
+        n_layers,
+        kernel_size,
+        p_dropout)
     self.dec = Generator(inter_channels, resblock, resblock_kernel_sizes, resblock_dilation_sizes, upsample_rates, upsample_initial_channel, upsample_kernel_sizes, gin_channels=gin_channels)
     self.enc_q = PosteriorEncoder(spec_channels, inter_channels, hidden_channels, 5, 1, 16, gin_channels=gin_channels)
     self.flow = ResidualCouplingBlock(inter_channels, hidden_channels, 5, 1, 4, n_flows=n_flow, gin_channels=gin_channels)
@@ -454,9 +507,11 @@ class SynthesizerTrn(nn.Module):
     if n_speakers > 1:
       self.emb_g = nn.Embedding(n_speakers, gin_channels)
 
-  def forward(self, x, x_lengths, y, y_lengths, sid=None):
+  def forward(self, x, x_lengths, y, y_lengths, note, note_lengths, sid=None):
 
     x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
+    note, note_m_p, note_logs_p, note_mask = self.enc_note(note, note_lengths)
+
     if self.n_speakers > 0:
       g = self.emb_g(sid).unsqueeze(-1) # [b, h, 1]
     else:
@@ -477,13 +532,25 @@ class SynthesizerTrn(nn.Module):
       attn_mask = torch.unsqueeze(x_mask, 2) * torch.unsqueeze(y_mask, -1)
       attn = monotonic_align.maximum_path(neg_cent, attn_mask.squeeze(1)).unsqueeze(1).detach() 
 
+      note_s_p_sq_r = torch.exp(-2 * note_logs_p) # [b, d, t]
+      note_neg_cent1 = torch.sum(-0.5 * math.log(2 * math.pi) - note_logs_p, [1], keepdim=True) # [b, 1, t_s]
+      note_neg_cent2 = torch.matmul(-0.5 * (z_p ** 2).transpose(1, 2), note_s_p_sq_r) # [b, t_t, d] x [b, d, t_s] = [b, t_t, t_s]
+      note_neg_cent3 = torch.matmul(z_p.transpose(1, 2), (note_m_p * note_s_p_sq_r)) # [b, t_t, d] x [b, d, t_s] = [b, t_t, t_s]
+      note_neg_cent4 = torch.sum(-0.5 * (note_m_p ** 2) * note_s_p_sq_r, [1], keepdim=True) # [b, 1, t_s]
+      note_neg_cent = note_neg_cent1 + note_neg_cent2 + note_neg_cent3 + note_neg_cent4
+
+      note_attn_mask = torch.unsqueeze(note_mask, 2) * torch.unsqueeze(y_mask, -1)
+      note_attn = monotonic_align.maximum_path(note_neg_cent, note_attn_mask.squeeze(1)).unsqueeze(1).detach() 
+
     # expand prior
     m_p = torch.matmul(attn.squeeze(1), m_p.transpose(1, 2)).transpose(1, 2)
     logs_p = torch.matmul(attn.squeeze(1), logs_p.transpose(1, 2)).transpose(1, 2)
+    note_m_p = torch.matmul(note_attn.squeeze(1), note_m_p.transpose(1, 2)).transpose(1, 2)
+    note_logs_p = torch.matmul(note_attn.squeeze(1), note_logs_p.transpose(1, 2)).transpose(1, 2)
 
     z_slice, ids_slice = commons.rand_slice_segments(z, y_lengths, self.segment_size)
     o = self.dec(z_slice, g=g)
-    return o, attn, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
+    return o, (attn, note_attn), ids_slice, (x_mask, note_mask), y_mask, (z, z_p, (m_p, note_m_p), (logs_p, note_logs_p), m_q, logs_q)
 
   def voice_conversion(self, y, y_lengths, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
