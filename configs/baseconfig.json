@@ -85,7 +85,7 @@
     ],
     "n_layers_q": 3,
     "use_spectral_norm": false,
-    "n_flow": 4,
+    "n_flow": 8,
     "gin_channels": 256,
     "n_note": 79
   },
@@ -93,7 +93,7 @@
     "os_type": "linux"
   },
   "augmentation": {
-    "enable"               : true,
+    "enable"               : false,
     "gain_p"               : 0.5,
     "min_gain_in_db"       : -10,
     "max_gain_in_db"       :  10,
