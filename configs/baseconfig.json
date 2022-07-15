@@ -85,8 +85,9 @@
     ],
     "n_layers_q": 3,
     "use_spectral_norm": false,
-    "flow_layer": 4,
-    "gin_channels": 256
+    "n_flow": 4,
+    "gin_channels": 256,
+    "n_note": 79
   },
   "others": {
     "os_type": "linux"
