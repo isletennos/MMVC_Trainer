@@ -4,6 +4,52 @@ import os
 import argparse
 import pyopenjtalk
 import json
+import pyworld as pw
+import numpy as np
+import csv
+from scipy.io import wavfile
+
+def get_f0(wav_path, fs = 24000, hop = 128):
+    sr, x = wavfile.read(wav_path, fs)
+    x = x.astype(np.float64)
+    _f0, _time = pw.dio(x, fs)    # 基本周波数の抽出
+    f0 = pw.stonemask(x, _f0, _time, fs)  # 基本周波数の修正
+    for index, pitch in enumerate(f0):
+        #0.
+        f0[index] = round(pitch, 1)
+    return f0
+
+def f0_to_note(f0, borders):
+    note = np.zeros(f0.shape)
+    borders = borders[1:]
+    print(borders)
+    for i in range(f0.shape[0]):
+        for j, border in enumerate(borders):
+            if f0[i] < border:
+                note[i] = j
+                break
+            else:
+              pass
+    return note
+
+def get_note_list(border_path):
+    note_border = list()
+    with open(border_path) as f:
+        reader = csv.reader(f)
+        for row in reader:
+            note_border.append(float(row[0]))
+    return note_border
+
+def note2text(note):
+    note_text = '-'.join(map(str, map(int, note)))
+    return note_text
+
+def get_note_text(wav_path, note_list_path):
+    f0 = get_f0(wav_path)
+    note_list = get_note_list(note_list_path)
+    note = f0_to_note(f0, note_list)
+    text = note2text(note)
+    return text
 
 def mozi2phone(mozi):
     text = pyopenjtalk.g2p(mozi)
@@ -25,7 +71,7 @@ def create_json(filename, num_speakers, sr, config_path):
     with open("./configs/" + filename + ".json", 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-def create_dataset(filename):
+def create_dataset(filename, note_list_path = "note_correspondence.csv"):
     speaker_id = 0
     textful_dir_list = glob.glob("dataset/textful/*")
     textless_dir_list = glob.glob("dataset/textless/*")
@@ -62,12 +108,13 @@ def create_dataset(filename):
                 print(str(mozi))
                 test = mozi2phone(str(mozi))
                 print(test)
-                print(wav + "|"+ str(speaker_id) + "|"+ test)
+                note = get_note_text(wav, note_list_path)
+                print(wav + "|"+ str(speaker_id) + "|"+ test + note)
                 if counter % 10 != 0:
-                    output_file_list.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
+                    output_file_list.append(wav + "|"+ str(speaker_id) + "|"+ test + "|"+ note + "\n")
                 else:
                     if val_flag:
-                        output_file_list_val.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
+                        output_file_list_val.append(wav + "|"+ str(speaker_id) + "|"+ test + "|"+ note + "\n")
                     else:
                         pass
                 
@@ -109,7 +156,7 @@ def create_dataset(filename):
         f.writelines(Correspondence_list)
     return speaker_id
 
-def create_dataset_zundamon(filename):
+def create_dataset_zundamon(filename, note_list_path = "note_correspondence.csv"):
     textful_dir_list = glob.glob("dataset/textful/*")
     textless_dir_list = glob.glob("dataset/textless/*")
     textful_dir_list.sort()
@@ -141,11 +188,12 @@ def create_dataset_zundamon(filename):
         print(str(mozi))
         test = mozi2phone(str(mozi))
         print(test)
-        print(wav + "|"+ str(speaker_id) + "|"+ test)
+        note = get_note_text(wav, note_list_path)
+        print(wav + "|"+ str(speaker_id) + "|"+ test + "|"+ note)
         if counter % 10 != 0:
-            output_file_list.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
+            output_file_list.append(wav + "|"+ str(speaker_id) + "|"+ test + "|"+ note + "\n")
         else:
-            output_file_list_val.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
+            output_file_list_val.append(wav + "|"+ str(speaker_id) + "|"+ test + "|"+ note + "\n")
         counter = counter +1
     Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
 
@@ -160,17 +208,18 @@ def create_dataset_zundamon(filename):
         exit()
     counter = 0
     for lab, wav in zip(lab_file_list, wav_file_list):
-      with open(lab, 'r', encoding="utf-8") as f:
-          mozi = f.read().split("\n")
-      print(str(mozi))
-      test = mozi2phone(str(mozi))
-      print(test)
-      print(wav + "|"+ str(speaker_id) + "|"+ test)
-      if counter % 10 != 0:
-          output_file_list.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
-      else:
-          output_file_list_val.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
-      counter = counter +1
+        with open(lab, 'r', encoding="utf-8") as f:
+            mozi = f.read().split("\n")
+        print(str(mozi))
+        test = mozi2phone(str(mozi))
+        print(test)
+        note = get_note_text(wav, note_list_path)
+        print(wav + "|"+ str(speaker_id) + "|"+ test + "|"+ note)
+        if counter % 10 != 0:
+            output_file_list.append(wav + "|"+ str(speaker_id) + "|"+ test + "|"+ note + "\n")
+        else:
+            output_file_list_val.append(wav + "|"+ str(speaker_id) + "|"+ test + "|"+ note + "\n")
+        counter = counter +1
     Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
 
     for d in textless_dir_list:
