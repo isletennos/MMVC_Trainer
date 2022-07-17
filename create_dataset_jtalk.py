@@ -26,7 +26,7 @@ def create_json(filename, num_speakers, sr, config_path):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 def create_dataset(filename):
-    speaker_id = 107
+    speaker_id = 106
     textful_dir_list = glob.glob("dataset/textful/*")
     textless_dir_list = glob.glob("dataset/textless/*")
     textful_dir_list.sort()
@@ -58,7 +58,7 @@ def create_dataset(filename):
             counter = counter +1
         Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
         speaker_id = speaker_id + 1
-        if speaker_id > 108:
+        if speaker_id > 107:
             break
 
     for d in textless_dir_list:
@@ -103,7 +103,7 @@ def create_dataset_zundamon(filename):
 
     #set list wav and text
     #myvoice
-    speaker_id = 107
+    speaker_id = 106
     d = my_path
     wav_file_list = glob.glob(d + "/wav/*.wav")
     lab_file_list = glob.glob(d + "/text/*.txt")
@@ -193,7 +193,7 @@ def create_dataset_character(filename, tid):
 
     #set list wav and text
     #myvoice
-    speaker_id = 107
+    speaker_id = 106
     d = my_path
     wav_file_list = glob.glob(d + "/wav/*.wav")
     lab_file_list = glob.glob(d + "/text/*.txt")
