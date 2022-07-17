@@ -20,10 +20,8 @@ def get_f0(wav_path, fs = 24000, hop = 128):
     return f0
 
 def f0_to_note(f0, borders):
-    print(f0.shape)
     f0 = f0[0::2]
     f0 = f0[0::2]
-    print(f0.shape)
     note = np.zeros(f0.shape)
     borders = borders[1:]
 
