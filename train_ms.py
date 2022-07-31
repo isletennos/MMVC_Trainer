@@ -82,7 +82,7 @@ def run(rank, n_gpus, hps):
   dist.init_process_group(backend=backend_type, init_method='env://', world_size=n_gpus, rank=rank)
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
-  train_dataset = TextAudioSpeakerLoader(hps.data.training_files, hps.data, augmentation=hps.augmentation.enable, augmentation_params=hps.augmentation)
+  train_dataset = TextAudioSpeakerLoader(hps.data.training_files, hps.data, augmentation=hps.augmentation.enable, augmentation_params=hps.augmentation, segment_size=hps.train.segment_size)
   train_sampler = DistributedBucketSampler(
       train_dataset,
       hps.train.batch_size,
@@ -94,7 +94,7 @@ def run(rank, n_gpus, hps):
   train_loader = DataLoader(train_dataset, num_workers=cpu_count, shuffle=False, pin_memory=True,
       collate_fn=collate_fn, batch_sampler=train_sampler)
   if rank == 0:
-    eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data, augmentation=False)
+    eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data, augmentation=False, segment_size=hps.train.segment_size)
     eval_sampler = DistributedBucketSampler(
       eval_dataset,
       hps.train.batch_size,
@@ -178,7 +178,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
     with autocast(enabled=hps.train.fp16_run):
       y_hat, (attn, note_attn), ids_slice, _, z_mask,\
-      (z, z_p, (m_p, note_m_p), (logs_p, note_logs_p), m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers)
+        (z, z_p, (m_p, note_m_p), (logs_p, note_logs_p), m_q, logs_q), yr_hat = net_g(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers)
       mel = spec_to_mel_torch(
           spec, 
           hps.data.filter_length, 
@@ -186,7 +186,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           hps.data.sampling_rate,
           hps.data.mel_fmin, 
           hps.data.mel_fmax)
-      y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
+      #y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
+      y_mel = mel
     y_hat = y_hat.float()
     y_hat_mel = mel_spectrogram_torch(
         y_hat.squeeze(1), 
@@ -198,7 +199,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         hps.data.mel_fmin, 
         hps.data.mel_fmax
     )
-    y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
+    #y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
+    y = y
 
     # Discriminator
     y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
@@ -211,6 +213,19 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
     scaler.step(optim_d)
 
+    # VC loss
+    yr_hat = yr_hat.float()
+    yr_hat_mel = mel_spectrogram_torch(
+        yr_hat.squeeze(1), 
+        hps.data.filter_length, 
+        hps.data.n_mel_channels, 
+        hps.data.sampling_rate, 
+        hps.data.hop_length, 
+        hps.data.win_length, 
+        hps.data.mel_fmin, 
+        hps.data.mel_fmax
+    )
+
     with autocast(enabled=hps.train.fp16_run):
       # Generator
       y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
@@ -221,6 +236,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         loss_fm = feature_loss(fmap_r, fmap_g)
         loss_gen, losses_gen = generator_loss(y_d_hat_g)
         loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl + (loss_note_kl * hps.train.note_kl)
+        loss_vc = F.l1_loss(y_mel, yr_hat_mel) * hps.train.c_mel
     optim_g.zero_grad()
     scaler.scale(loss_gen_all).backward()
     scaler.unscale_(optim_g)
@@ -240,6 +256,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         
         scalar_dict = {"loss/g/total": loss_gen_all, "loss/d/total": loss_disc_all, "learning_rate": lr, "grad_norm_d": grad_norm_d, "grad_norm_g": grad_norm_g}
         scalar_dict.update({"loss/g/fm": loss_fm, "loss/g/mel": loss_mel, "loss/g/kl": loss_kl, "loss/g/note_kl": loss_note_kl})
+        scalar_dict.update({"loss/g/vc": loss_vc})
 
         scalar_dict.update({"loss/g/{}".format(i): v for i, v in enumerate(losses_gen)})
         scalar_dict.update({"loss/d_r/{}".format(i): v for i, v in enumerate(losses_disc_r)})
@@ -291,7 +308,8 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
               hps.data.sampling_rate,
               hps.data.mel_fmin, 
               hps.data.mel_fmax)
-          y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
+          #y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
+          y_mel = mel
         y_hat = y_hat.float()
         y_hat_mel = mel_spectrogram_torch(
             y_hat.squeeze(1), 
@@ -305,7 +323,8 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
         )
         batch_num = batch_idx
 
-        y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
+        #y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
+        y = y
 
         with autocast(enabled=hps.train.fp16_run):
           with autocast(enabled=False):
