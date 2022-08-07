@@ -16,13 +16,28 @@ https://github.com/isletennos/MMVC_Client
 xxxx (v1.2.2.0)  
 https://www.nicovideo.jp/watch/sm40386035 (v1.2.0.0)
 
-## 利用規約(2022/08/10)
+## MMVCの利用規約 及び MMVC用音源の配布先(2022/08/10)
 本ソフトウェアの利用規約は基本的にMITライセンスに準拠します。  
+1. このソフトウェアは、コピー利用、配布、変更の追加、変更を加えたもの再配布、商用利用、有料販売など、どなたでも自由にお使いいただくことができます。
+2. ライセンスの記載が可能なプラットフォームでの利用の場合、下記クレジットどちらかををご利用ください。  
 **VRCでの利用などライセンス記載が不可の場合、記載は不要です。**  
-ライセンスの記載が可能なプラットフォームでの利用の場合、下記クレジットどちらかををご利用ください。  
-(可能であればパターン2を使ってくれると製作者はうれしいです)  
-### -2022/5/12 加筆 -
-ずんだもん/四国めたん/九州そら  
+(可能であればパターン2を使ってくれると製作者はうれしいです) 
+3. このソフトウェアで利用する音声データは、必ず元の音声データの所持者の許諾を得たものを利用すること。または音声データの配布元の利用規約内で利用すること。  
+4. このソフトウェアについて、製作者はいかなる保証も致しません。  
+また、このソフトウェアを利用したことで問題が起きた際に、ソフトウェアの製作者は一切の責任を負いません。  
+
+### MMVC公式配布の音声データの利用規約とダウンロード先について
+MMVCの利用規約とは別に、下記音声データを利用する場合、それぞれの音声ライブラリ提供者様の利用規約に同意する必要があります。  
+※本ソフトウェアでは下記企業様・団体様に特別に許可を頂き、音声データを本ソフトウェア用に改変、再配布を行っております。  
+#### 東北プロジェクト様(？)
+[利用規約][ずんだもん　音声データ]　※本ソフトウェアに同梱しているものと同様の音声データになります  
+[利用規約][九州そら 音声データ]  
+[利用規約][四国めたん 音声データ]  
+#### 春日部つむぎ様(？)
+[利用規約][春日部つむぎ 音声データ]  
+
+### ライセンス表記について  
+ずんだもん/四国めたん/九州そら/春日部つむぎ  
 の3キャラクターを利用する場合に限り、下記ライセンスパターンに加えて、どのツールで作られた音声かわかるように  
 ```
 MMVC:ずんだもん  
@@ -33,15 +48,15 @@ MMVC:ずんだもん/四国めたん
 
 ライセンスパターン 1　
 ```
-Copyright (c) 2021 Isle.Tennos　
+Copyright (c) 2022 Isle.Tennos　
 Released under the MIT license　
 https://opensource.org/licenses/mit-license.php
 ```
 
 ライセンスパターン 2　
 ```
-MMVCv1.x.x(使用バージョン)　
-Copyright (c) 2021 Isle.Tennos　
+MMVCv1.x.x.x(使用バージョン)　
+Copyright (c) 2022 Isle.Tennos　
 Released under the MIT license　
 https://opensource.org/licenses/mit-license.php
 git:https://github.com/isletennos/MMVC_Trainer
@@ -53,15 +68,11 @@ community(discord):https://discord.gg/PgspuDSTEc
 このリポジトリをダウンロードして、展開、展開したディレクトリをgoogle drive上にアップロードしてください。
 ## Usage
 ### チュートリアル : ずんだもんになる
+本チュートリアルではずんだもん(東北プロジェクト様?)の音声データを利用します。  
+そのため、MMVCの利用規約とは別に[ずんだもん 利用規約]を遵守する必要があります。
 #### Ph1. 自分の音声の録音と音声データの配置
 1. 自分の声の音声データを録音します。  
 JVSコーパスやITAコーパス等を台本にし、100文程度読み上げます。  
-音声の録音ツールは  
-Audacity  
-https://forest.watch.impress.co.jp/library/software/audacity/  
-OREMO  
-http://nwp8861.web.fc2.com/soft/oremo/  
-等があります。  
 また、録音した音声は**24000Hz 16bit 1ch**である必要があります。  
 ※MMVC用にテキストを分割したITAコーパスです。ご利用ください。  
 https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing
@@ -100,7 +111,7 @@ dataset
 #### Ph2. モデルの学習方法
 1. 下記リンクより、「G_180000.pth」「D_180000.pth」をダウンロード。 
 https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sharing
-2. 「G_180000.pth」「D_180000.pth」をfine_modelに配置します。(良く忘れるポイントなので要注意！)  
+2. 「G_180000.pth」「D_180000.pth」をfine_modelに配置します。**(良く忘れるポイントなので要注意！)**  
 3. notebookディレクトリにある「Create_Configfile_zundamon.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成します  
 4. configsに作成されたtrain_config_zundamon.jsonの  
  
@@ -120,11 +131,6 @@ https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sha
 #### Ph1. 自分の音声の録音と音声データの配置 及びターゲット音声データの配置
 1. 自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。    
 この時、用意する音声(自分の声の音声データ/変換したい声の音声データ共に)は**24000Hz 16bit 1ch**を強く推奨しております。  
-
-    九州そらと四国めたんのMMVC用のデータは下記リンクからダウンロードください。  
-    ダウンロード後、2節のように音声データとテキストデータを配置してください。   
-    https://drive.google.com/drive/folders/1ClIUx_2Wv-uNnuW2LlfG7aTHrUaZ2Asx?usp=sharing
-
 2. 下記のようなディレクトリ構成になるように音声データとテキストデータを配置します。  
     textfulの直下には2ディレクトリになります。  
     (1205_zundamonディレクトリは無くても問題ありません) 
@@ -166,24 +172,16 @@ dataset
 以降、「チュートリアル : ずんだもんになる Ph2.」と同様のため割愛  
 #### Ph3. 学習したモデルの性能検証
 以降、「チュートリアル : ずんだもんになる Ph3.」と同様のため割愛  
+## 有志によるチュートリアル動画
+### v1.2.1.x
+~~  
+~~
 ## Q&A
 下記サイトをご参考ください。  
 https://mmvc.readthedocs.io/ja/latest/index.html
-## Note
-なにか不明点があればお気軽にご連絡ください。
 ## MMVCコミュニティサーバ(discord)
 開発の最新情報や、不明点のお問合せ、MMVCの活用法などMMVCに関するコミュニティサーバです。  
 https://discord.gg/PgspuDSTEc
-
-## ITAコーパス マルチモーダルデータベースについて 
-本ソフトウェアで再配布されている  
-・ずんだもん(伊藤ゆいな)  
-・四国めたん(田中小雪)  
-・九州そら(西田望見)  
-の音声データの著作物の権利はSSS合同会社様にあります。  
-本ソフトウェアではSSS合同会社様に許可を頂き、音声データを本ソフトウェア用に改変、再配布を行っております。  
-上記キャラクターの音声を利用する際にはSSS合同会社様の利用規約に同意する必要があります。  
-https://zunko.jp/multimodal_dev/login.php
 
 ## Special thanks
 - JVS (Japanese versatile speech) corpus  
