@@ -13,9 +13,10 @@ https://github.com/isletennos/MMVC_Client
 ## concept
 「簡単」「だれでも」「好きな声に」「リアルタイムで」
 ## Demo
-https://www.nicovideo.jp/watch/sm40292061
+xxxx (v1.2.2.0)  
+https://www.nicovideo.jp/watch/sm40386035 (v1.2.0.0)
 
-## 利用規約(2022/05/12)
+## 利用規約(2022/08/10)
 本ソフトウェアの利用規約は基本的にMITライセンスに準拠します。  
 **VRCでの利用などライセンス記載が不可の場合、記載は不要です。**  
 ライセンスの記載が可能なプラットフォームでの利用の場合、下記クレジットどちらかををご利用ください。  
