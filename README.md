@@ -77,7 +77,7 @@ community(discord):https://discord.gg/PgspuDSTEc
 JVSコーパスやITAコーパス等を台本にし、100文程度読み上げます。  
 また、録音した音声は**24000Hz 16bit 1ch**である必要があります。  
 ※MMVC用にテキストを分割したITAコーパスです。ご利用ください。  
-https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing
+https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing  
 
 2. dataset/textful/000_myvoice に音声データとテキストデータを配置します。 
 最終的に下記のようなディレクトリ構成になります。  
