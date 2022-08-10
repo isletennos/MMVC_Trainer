@@ -32,9 +32,9 @@ https://www.nicovideo.jp/watch/sm40386035 (v1.2.0.0)
 MMVCの利用規約とは別に、下記音声データを利用する場合、それぞれの音声ライブラリ提供者様の利用規約に同意する必要があります。  
 ※本ソフトウェアでは下記企業様・団体様に特別に許可を頂き、音声データを本ソフトウェア用に改変、再配布を行っております。  
 #### SSS LLC.
-[[利用規約](zunko.jp/guideline.html)][[ずんだもん 音声データ](https://drive.google.com/file/d/1ria8bRkzrneRYJXhfRQxTA_-ntlFJxUj/view?usp=sharing)]　※本ソフトウェアに同梱しているものと同様の音声データになります  
-[[利用規約](zunko.jp/guideline.html)][[九州そら 音声データ](https://drive.google.com/file/d/1QpdrBrnRkTGZfNzL811yCe1L4OYVHDN0/view?usp=sharing)]  
-[[利用規約](zunko.jp/guideline.html)][[四国めたん 音声データ](https://drive.google.com/file/d/1nduC-Ym8aS_rtk_IqAgPBw7Dw6yb_0j7/view?usp=sharing)]  
+[[利用規約](https://zunko.jp/guideline.html)][[ずんだもん 音声データ](https://drive.google.com/file/d/1ria8bRkzrneRYJXhfRQxTA_-ntlFJxUj/view?usp=sharing)]　※本ソフトウェアに同梱しているものと同様の音声データになります  
+[[利用規約](https://zunko.jp/guideline.html)][[九州そら 音声データ](https://drive.google.com/file/d/1QpdrBrnRkTGZfNzL811yCe1L4OYVHDN0/view?usp=sharing)]  
+[[利用規約](https://zunko.jp/guideline.html)][[四国めたん 音声データ](https://drive.google.com/file/d/1nduC-Ym8aS_rtk_IqAgPBw7Dw6yb_0j7/view?usp=sharing)]  
 #### 春日部つむぎプロジェクト様
 [[利用規約](https://tsumugi-official.studio.site/rule)][[春日部つむぎ 音声データ](https://drive.google.com/file/d/1PmxoRo74hmeS-v0-TykCNcamxl0mdLHZ/view?usp=sharing)]  
 
@@ -71,7 +71,7 @@ community(discord):https://discord.gg/PgspuDSTEc
 ## Usage
 ### チュートリアル : ずんだもんになる
 本チュートリアルではずんだもん(SSS LLC.)の音声データを利用します。  
-そのため、MMVCの利用規約とは別に[[ずんだもん 利用規約](zunko.jp/guideline.html)]を遵守する必要があります。
+そのため、MMVCの利用規約とは別に[[ずんだもん 利用規約](https://zunko.jp/guideline.html)]を遵守する必要があります。
 #### Ph1. 自分の音声の録音と音声データの配置
 1. 自分の声の音声データを録音します。  
 JVSコーパスやITAコーパス等を台本にし、100文程度読み上げます。  
