@@ -91,7 +91,7 @@ def run(rank, n_gpus, hps):
   train_sampler = DistributedBucketSampler(
       train_dataset,
       hps.train.batch_size,
-      [75,375,750,1125,1500,1875,2250,2625,3000],
+      [96,375,750,1125,1500,1875,2250,2625,3000],
       num_replicas=n_gpus,
       rank=rank,
       shuffle=True)
@@ -103,7 +103,7 @@ def run(rank, n_gpus, hps):
     eval_sampler = DistributedBucketSampler(
       eval_dataset,
       hps.train.batch_size,
-      [75,375,750,1125,1500,1875,2250,2625,3000],
+      [96,375,750,1125,1500,1875,2250,2625,3000],
       num_replicas=n_gpus,
       rank=rank,
       shuffle=True)
