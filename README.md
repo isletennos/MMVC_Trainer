@@ -13,7 +13,7 @@ https://github.com/isletennos/MMVC_Client
 ## concept
 「簡単」「だれでも」「好きな声に」「リアルタイムで」
 ## Demo
-xxxx (v1.2.2.0)  
+制作中 (v1.2.2.0)  
 https://www.nicovideo.jp/watch/sm40386035 (v1.2.0.0)
 
 ## MMVCの利用規約 及び MMVC用音源の配布先(2022/08/10)
@@ -23,20 +23,20 @@ https://www.nicovideo.jp/watch/sm40386035 (v1.2.0.0)
 2. ライセンスの記載が可能なプラットフォームでの利用の場合、下記クレジットどちらかををご利用ください。  
 **VRCでの利用などライセンス記載が不可の場合、記載は不要です。**  
 (可能であればパターン2を使ってくれると製作者はうれしいです) 
-3. このソフトウェアで利用する音声データは、必ず元の音声データの所持者の許諾を得たものを利用すること。  
-または音声データの配布元の利用規約内で利用すること。  
-4. このソフトウェアについて、製作者はいかなる保証も致しません。  
+3. このソフトウェアについて、製作者はいかなる保証も致しません。  
 また、このソフトウェアを利用したことで問題が起きた際に、ソフトウェアの製作者は一切の責任を負いません。  
+4. このソフトウェアで利用する音声データは、必ず元の音声データの所持者の許諾を得たものを利用すること。  
+または音声データの配布元の利用規約内で利用すること。  
 
 ### MMVC公式配布の音声データの利用規約とダウンロード先について
 MMVCの利用規約とは別に、下記音声データを利用する場合、それぞれの音声ライブラリ提供者様の利用規約に同意する必要があります。  
 ※本ソフトウェアでは下記企業様・団体様に特別に許可を頂き、音声データを本ソフトウェア用に改変、再配布を行っております。  
 #### SSS LLC.
-[利用規約][ずんだもん 音声データ]　※本ソフトウェアに同梱しているものと同様の音声データになります  
-[利用規約][九州そら 音声データ]  
-[利用規約][四国めたん 音声データ]  
-#### 春日部つむぎ様(？)
-[利用規約][春日部つむぎ 音声データ]  
+[[利用規約](zunko.jp/guideline.html)][[ずんだもん 音声データ](https://drive.google.com/file/d/1ria8bRkzrneRYJXhfRQxTA_-ntlFJxUj/view?usp=sharing)]　※本ソフトウェアに同梱しているものと同様の音声データになります  
+[[利用規約](zunko.jp/guideline.html)][[九州そら 音声データ](https://drive.google.com/file/d/1QpdrBrnRkTGZfNzL811yCe1L4OYVHDN0/view?usp=sharing)]  
+[[利用規約](zunko.jp/guideline.html)][[四国めたん 音声データ](https://drive.google.com/file/d/1nduC-Ym8aS_rtk_IqAgPBw7Dw6yb_0j7/view?usp=sharing)]  
+#### 春日部つむぎプロジェクト様
+[[利用規約](https://tsumugi-official.studio.site/rule)][[春日部つむぎ 音声データ](https://drive.google.com/file/d/1PmxoRo74hmeS-v0-TykCNcamxl0mdLHZ/view?usp=sharing)]  
 
 ### ライセンス表記について  
 ずんだもん/四国めたん/九州そら/春日部つむぎ  
@@ -71,7 +71,7 @@ community(discord):https://discord.gg/PgspuDSTEc
 ## Usage
 ### チュートリアル : ずんだもんになる
 本チュートリアルではずんだもん(SSS LLC.)の音声データを利用します。  
-そのため、MMVCの利用規約とは別に[ずんだもん 利用規約]を遵守する必要があります。
+そのため、MMVCの利用規約とは別に[[ずんだもん 利用規約](zunko.jp/guideline.html)]を遵守する必要があります。
 #### Ph1. 自分の音声の録音と音声データの配置
 1. 自分の声の音声データを録音します。  
 JVSコーパスやITAコーパス等を台本にし、100文程度読み上げます。  
@@ -176,8 +176,18 @@ dataset
 以降、「チュートリアル : ずんだもんになる Ph3.」と同様のため割愛  
 ## 有志によるチュートリアル動画
 ### v1.2.1.x
-~~  
-~~
+| 前準備編　　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40415108) | [YouTube](https://www.youtube.com/watch?v=gq1Hpn5CARw&ab_channel=popi) |
+|:--------------|:------------|:------------|
+| 要修正音声　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40420683)| [YouTube](https://youtu.be/NgzC7Nuk6gg)  |
+| 前準備編2 　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40445164)| [YouTube](https://youtu.be/m4Jew7sTs9w)  
+| 学習編_前1　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40467662)| [YouTube](https://youtu.be/HRSPEy2jUvg)  
+| 学習編_前2　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40473168)| [YouTube](https://youtu.be/zQW59vrOSuA)  
+| 学習編_後 　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40490554)| [YouTube](https://www.youtube.com/watch?v=uB3YfdKzo-g&ab_channel=popi)  
+| リアルタイム編 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40415108)| [YouTube](https://youtu.be/Al5DFCvKLFA)  
+| 質問編　　　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40524705)| [YouTube](https://youtu.be/Al5DFCvKLFA)  
+| 応用編_九州そら| [ニコニコ動画](https://www.nicovideo.jp/watch/sm40599514)| [YouTube](https://youtu.be/MEXKZoHVd-A)  
+| 応用編_音街ウナ| [ニコニコ動画](https://www.nicovideo.jp/watch/sm40714406)| [YouTube](https://youtu.be/JDMlRz-PkSE)  
+
 ## Q&A
 下記サイトをご参考ください。  
 https://mmvc.readthedocs.io/ja/latest/index.html
