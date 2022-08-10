@@ -184,8 +184,8 @@ dataset
 | 学習編_前2　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40473168)| [YouTube](https://youtu.be/zQW59vrOSuA)  
 | 学習編_後 　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40490554)| [YouTube](https://www.youtube.com/watch?v=uB3YfdKzo-g&ab_channel=popi)  
 | リアルタイム編 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40415108)| [YouTube](https://youtu.be/Al5DFCvKLFA)  
-| 質問編　　　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40524705)| [YouTube](https://youtu.be/Al5DFCvKLFA)  
-| 応用編_九州そら| [ニコニコ動画](https://www.nicovideo.jp/watch/sm40599514)| [YouTube](https://youtu.be/MEXKZoHVd-A)  
+| 質問編　　　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40599514)| [YouTube](https://youtu.be/Al5DFCvKLFA)  
+| 応用編_九州そら| [ニコニコ動画](https://www.nicovideo.jp/watch/sm40647601)| [YouTube](https://youtu.be/MEXKZoHVd-A)  
 | 応用編_音街ウナ| [ニコニコ動画](https://www.nicovideo.jp/watch/sm40714406)| [YouTube](https://youtu.be/JDMlRz-PkSE)  
 
 ## Q&A
