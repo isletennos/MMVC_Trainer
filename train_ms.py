@@ -18,7 +18,8 @@ import datetime
 import pytz
 import time
 from tqdm import tqdm
-#import warnings
+import numpy as np
+import wave
 
 
 import commons
@@ -328,6 +329,30 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
       global_step=global_step, 
       scalars=scalar_dict,
     )
-                           
+
+    # VCサンプル出力
+    if hasattr(hps.others, "input_filename"):
+      input_filename = hps.others.input_filename
+      source_id = hps.others.source_id
+      target_id = hps.others.target_id
+
+      with torch.no_grad():
+        dataset = TextAudioSpeakerLoader(hps.data.validation_files_notext, hps.data)
+        data = dataset.get_audio_text_speaker_pair([input_filename, source_id, "a"])
+        data = TextAudioSpeakerCollate()([data])
+        x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src = [x.cuda(0) for x in data]
+        sid_tgt = torch.LongTensor([target_id]).cuda(0)
+        audio = generator.module.voice_conversion(spec, spec_lengths, sid_src=sid_src, sid_tgt=sid_tgt)[0][0,0].data.cpu().float().numpy()
+
+      audio = audio * hps.data.max_wav_value
+      wav = audio.astype(np.int16).tobytes()
+      output_filename = os.path.join(hps.model_dir, "vc_{}.wav".format(global_step))
+      fh = wave.open(output_filename, 'wb')
+      fh.setnchannels(1)
+      fh.setsampwidth(2)
+      fh.setframerate(hps.data.sampling_rate)
+      fh.writeframes(wav)
+      fh.close()
+
 if __name__ == "__main__":
   main()
