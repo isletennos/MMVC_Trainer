@@ -13,7 +13,7 @@ https://github.com/isletennos/MMVC_Client
 ## concept
 「簡単」「だれでも」「好きな声に」「リアルタイムで」
 ## Demo
-制作中 (v1.2.2.0)  
+制作中 (v1.3.0.0)  
 https://www.nicovideo.jp/watch/sm40386035 (v1.2.0.0)
 
 ## MMVCの利用規約 及び MMVC用音源の配布先(2022/08/10)
