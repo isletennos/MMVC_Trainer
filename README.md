@@ -36,7 +36,7 @@ MMVCの利用規約とは別に、下記音声データを利用する場合、�
 [[利用規約](https://zunko.jp/guideline.html)][[九州そら 音声データ](https://drive.google.com/file/d/1QpdrBrnRkTGZfNzL811yCe1L4OYVHDN0/view?usp=sharing)]  
 [[利用規約](https://zunko.jp/guideline.html)][[四国めたん 音声データ](https://drive.google.com/file/d/1nduC-Ym8aS_rtk_IqAgPBw7Dw6yb_0j7/view?usp=sharing)]  
 #### 春日部つむぎプロジェクト様
-[[利用規約](https://tsumugi-official.studio.site/rule)][[春日部つむぎ 音声データ](https://drive.google.com/file/d/1PmxoRo74hmeS-v0-TykCNcamxl0mdLHZ/view?usp=sharing)]  
+[[利用規約](https://tsumugi-official.studio.site/rule)][[春日部つむぎ 音声データ](https://drive.google.com/file/d/14zE0F_5ZCQWXf6m6SUPF5Y3gpL6yb7zk/view?usp=sharing)]  
 
 ### ライセンス表記について  
 ずんだもん/四国めたん/九州そら/春日部つむぎ  
