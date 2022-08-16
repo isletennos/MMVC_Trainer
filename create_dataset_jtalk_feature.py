@@ -4,12 +4,73 @@ import os
 import argparse
 import pyopenjtalk
 import json
+import pyworld as pw
+import numpy as np
+import csv
+from scipy.io import wavfile
 
+#f0の取得
+def get_f0(wav_path, fs = 24000, hop = 128):
+    sr, x = wavfile.read(wav_path, fs)
+    x = x.astype(np.float64)
+    _f0, _time = pw.dio(x, fs)    # 基本周波数の抽出
+    f0 = pw.stonemask(x, _f0, _time, fs)  # 基本周波数の修正
+    for index, pitch in enumerate(f0):
+        #0.
+        f0[index] = round(pitch, 1)
+    return f0
+
+#f0を連続値>カテゴリ(note)
+def f0_to_note(f0, borders):
+    f0 = f0[0::4]
+    note = np.zeros(f0.shape)
+    borders = borders[1:]
+
+    for i in range(f0.shape[0]):
+        for j, border in enumerate(borders):
+            if f0[i] < border:
+                note[i] = j
+                break
+            else:
+              pass
+    return note
+
+#音階リストの読み込み
+def get_note_list(border_path):
+    note_border = list()
+    with open(border_path) as f:
+        reader = csv.reader(f)
+        for row in reader:
+            note_border.append(float(row[0]))
+    return note_border
+
+#既存のテキストエンコーダーと同様に読み込みができる所に処理
+def note2text(note):
+    note_text = '-'.join(map(str, map(int, note)))
+    return note_text
+
+#音階を記載
+def get_note_text(wav_path, note_list_path):
+    f0 = get_f0(wav_path)
+    note_list = get_note_list(note_list_path)
+    note = f0_to_note(f0, note_list)
+    text = note2text(note)
+    return text
+
+#textを音素に
 def mozi2phone(mozi):
     text = pyopenjtalk.g2p(mozi)
     text = "sil " + text + " sil"
     text = text.replace(' ', '-')
     return text
+
+#filelistの1行を作成する
+def create_data_line(mozi, wav, note_list_path, speaker_id):
+    test = mozi2phone(str(mozi))
+    note = get_note_text(wav, note_list_path)
+    one_line = wav + "|"+ str(speaker_id) + "|"+ test + "|"+ note + "\n"
+    print(one_line)
+    return one_line
 
 def create_json(filename, num_speakers, sr, config_path):
     if os.path.exists(config_path):
@@ -25,8 +86,9 @@ def create_json(filename, num_speakers, sr, config_path):
     with open("./configs/" + filename + ".json", 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-def create_dataset(filename, my_sid):
+def create_dataset(filename, my_sid, note_list_path = "note_correspondence.csv"):
     speaker_id = my_sid
+    #list回りの宣言とソート
     textful_dir_list = glob.glob("dataset/textful/*")
     textless_dir_list = glob.glob("dataset/textless/*")
     textful_dir_list.sort()
@@ -36,6 +98,7 @@ def create_dataset(filename, my_sid):
     output_file_list_val = list()
     output_file_list_textless = list()
     output_file_list_val_textless = list()
+
     for d in textful_dir_list:
         wav_file_list = glob.glob(d+"/wav/*.wav")
         lab_file_list = glob.glob(d + "/text/*.txt")
@@ -47,14 +110,11 @@ def create_dataset(filename, my_sid):
         for lab, wav in zip(lab_file_list, wav_file_list):
             with open(lab, 'r', encoding="utf-8") as f:
                 mozi = f.read().split("\n")
-            print(str(mozi))
-            test = mozi2phone(str(mozi))
-            print(test)
-            print(wav + "|"+ str(speaker_id) + "|"+ test)
+            one_line = create_data_line(mozi, wav, note_list_path, speaker_id)
             if counter % 10 != 0:
-                output_file_list.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
+                output_file_list.append(one_line)
             else:
-                output_file_list_val.append(wav + "|"+ str(speaker_id) + "|"+ test + "\n")
+                output_file_list_val.append(one_line)
             counter = counter +1
         Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
         speaker_id = speaker_id + 1
