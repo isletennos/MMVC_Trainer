@@ -154,7 +154,7 @@ def create_dataset(filename, note_list_path = "note_correspondence.csv"):
         f.writelines(output_file_list_val_textless)
     with open('filelists/' + filename + '_Correspondence.txt', 'w', encoding='utf-8', newline='\n') as f:
         f.writelines(Correspondence_list)
-    return speaker_id
+    return NUM_MAX_SID
 
 def create_dataset_zundamon(filename, note_list_path = "note_correspondence.csv"):
     #list回りの宣言とソート
