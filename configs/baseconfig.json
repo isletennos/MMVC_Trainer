@@ -17,13 +17,15 @@
     "init_lr_ratio": 1,
     "warmup_epochs": 0,
     "c_mel": 45,
-    "c_kl": 1.0
+    "c_kl": 1.0,
+    "note_kl": 0.25
   },
   "data": {
     "training_files": "filelists/dec_not_propagation_label_and_change_melspec_textful.txt",
     "validation_files": "filelists/dec_not_propagation_label_and_change_melspec_textful_val.txt",
     "training_files_notext": "filelists/dec_not_propagation_label_and_change_melspec_textless.txt",
     "validation_files_notext": "filelists/dec_not_propagation_label_and_change_melspec_val_textless.txt",
+    "Correspondence": "filelists/dec_not_propagation_label_and_change_melspec_val_textless.txt",
     "text_cleaners": [
       "japanese_cleaners"
     ],
@@ -86,13 +88,14 @@
     "n_layers_q": 3,
     "use_spectral_norm": false,
     "n_flow": 8,
-    "gin_channels": 256
+    "gin_channels": 256,
+    "n_note": 79
   },
   "others": {
     "os_type": "linux"
   },
   "augmentation": {
-    "enable"               : true,
+    "enable"               : false,
     "gain_p"               : 0.5,
     "min_gain_in_db"       : -10,
     "max_gain_in_db"       :  10,
