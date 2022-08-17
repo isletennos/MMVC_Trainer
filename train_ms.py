@@ -272,7 +272,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
     scalar_dict.update({"loss/g/mel": 0.0, "loss/g/kl": 0.0, "loss/g/note_kl": 0.0})
     with torch.no_grad():
       #evalのデータセットを一周する
-      for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(tqdm(eval_loader, desc="Epoch {}".format("eval"))):
+      for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers, note, note_lengths) in enumerate(tqdm(eval_loader, desc="Epoch {}".format("eval"))):
         x, x_lengths = x.cuda(0), x_lengths.cuda(0)
         spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
         y, y_lengths = y.cuda(0), y_lengths.cuda(0)
