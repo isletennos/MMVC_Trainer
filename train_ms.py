@@ -19,7 +19,6 @@ import pytz
 import time
 from tqdm import tqdm
 import numpy as np
-import wave
 
 
 import commons
@@ -234,7 +233,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     scaler.update()
 
     if rank==0:
-      if global_step % hps.train.log_interval == 0:
+      eval_loss_mel = None
+      if global_step % hps.train.eval_interval == 0:
         lr = optim_g.param_groups[0]['lr']
         losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_kl]
         logger.info('Train Epoch: {} [{:.0f}%]'.format(
@@ -260,15 +260,29 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           global_step=global_step, 
           images=image_dict,
           scalars=scalar_dict)
+        eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger)
+        eval_loss_mel = float(eval_loss_dict["loss/g/mel"])
         utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_latest_99999999.pth"))
         utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_latest_99999999.pth"))
 
-      if global_step % hps.train.eval_interval == 0 and global_step != 0:
-        evaluate(hps, net_g, eval_loader, writer_eval, logger)
+      if global_step % hps.train.backup.step == 0 and global_step != 0:
+        if hps.train.backup.g_only == False:
+          utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
+
+        utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, global_step)
         utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
-        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
         utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_latest_99999999.pth"))
         utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_latest_99999999.pth"))
+
+      if eval_loss_mel is not None and eval_loss_mel < hps.best_loss_mel and global_step != 0:
+        if hps.train.backup.g_only == False:
+          utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_best.pth"))
+
+        utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, "best")
+        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_best.pth"))
+        utils.save_best_log(hps.best_log_path, global_step, eval_loss_mel, datetime.datetime.now(pytz.timezone('Asia/Tokyo')))
+        hps.best_loss_mel = eval_loss_mel
+
     global_step += 1
 
  
@@ -329,30 +343,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
       global_step=global_step, 
       scalars=scalar_dict,
     )
-
-    # VCサンプル出力
-    if hasattr(hps.others, "input_filename"):
-      input_filename = hps.others.input_filename
-      source_id = hps.others.source_id
-      target_id = hps.others.target_id
-
-      with torch.no_grad():
-        dataset = TextAudioSpeakerLoader(hps.data.validation_files_notext, hps.data)
-        data = dataset.get_audio_text_speaker_pair([input_filename, source_id, "a"])
-        data = TextAudioSpeakerCollate()([data])
-        x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src = [x.cuda(0) for x in data]
-        sid_tgt = torch.LongTensor([target_id]).cuda(0)
-        audio = generator.module.voice_conversion(spec, spec_lengths, sid_src=sid_src, sid_tgt=sid_tgt)[0][0,0].data.cpu().float().numpy()
-
-      audio = audio * hps.data.max_wav_value
-      wav = audio.astype(np.int16).tobytes()
-      output_filename = os.path.join(hps.model_dir, "vc_{}.wav".format(global_step))
-      fh = wave.open(output_filename, 'wb')
-      fh.setnchannels(1)
-      fh.setsampwidth(2)
-      fh.setframerate(hps.data.sampling_rate)
-      fh.writeframes(wav)
-      fh.close()
+    return scalar_dict
 
 if __name__ == "__main__":
   main()
