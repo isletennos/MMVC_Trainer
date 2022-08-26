@@ -2,7 +2,7 @@
   "train": {
     "eval_interval": 1000,
     "backup": {
-      "step": 2000,
+      "interval": 2000,
       "best": true,
       "g_only": true
     },
