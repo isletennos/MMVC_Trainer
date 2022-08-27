@@ -111,7 +111,8 @@ def run(rank, n_gpus, hps):
         collate_fn=collate_fn, batch_sampler=eval_sampler)
   net_g = SynthesizerTrn(
       len(symbols),
-      hps.data.filter_length // 2 + 1,
+      #hps.data.filter_length // 2 + 1,
+      hps.data.n_mel_channels, # spec channels
       hps.train.segment_size // hps.data.hop_length,
       n_speakers=hps.data.n_speakers,
       **hps.model).cuda(rank)
@@ -179,17 +180,16 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     spec, spec_lengths = spec.cuda(rank, non_blocking=True), spec_lengths.cuda(rank, non_blocking=True)
     y, y_lengths = y.cuda(rank, non_blocking=True), y_lengths.cuda(rank, non_blocking=True)
     speakers = speakers.cuda(rank, non_blocking=True)
-
+    mel = spec_to_mel_torch(
+        spec, 
+        hps.data.filter_length, 
+        hps.data.n_mel_channels, 
+        hps.data.sampling_rate,
+        hps.data.mel_fmin, 
+        hps.data.mel_fmax)
     with autocast(enabled=hps.train.fp16_run):
       y_hat, attn, ids_slice, x_mask, z_mask,\
-      (z, z_p, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, speakers)
-      mel = spec_to_mel_torch(
-          spec, 
-          hps.data.filter_length, 
-          hps.data.n_mel_channels, 
-          hps.data.sampling_rate,
-          hps.data.mel_fmin, 
-          hps.data.mel_fmax)
+      (z, z_p, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, mel, spec_lengths, speakers)
       y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
     y_hat = y_hat.float()
     y_hat_mel = mel_spectrogram_torch(
@@ -297,19 +297,19 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
         spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
         y, y_lengths = y.cuda(0), y_lengths.cuda(0)
         speakers = speakers.cuda(0)
+        mel = spec_to_mel_torch(
+            spec, 
+            hps.data.filter_length, 
+            hps.data.n_mel_channels, 
+            hps.data.sampling_rate,
+            hps.data.mel_fmin, 
+            hps.data.mel_fmax)
         #autocastはfp16のおまじない
         with autocast(enabled=hps.train.fp16_run):
           #Generator
           y_hat, attn, ids_slice, x_mask, z_mask,\
-          (z, z_p, m_p, logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, speakers)
+          (z, z_p, m_p, logs_p, m_q, logs_q) = generator(x, x_lengths, mel, spec_lengths, speakers)
 
-          mel = spec_to_mel_torch(
-              spec, 
-              hps.data.filter_length, 
-              hps.data.n_mel_channels, 
-              hps.data.sampling_rate,
-              hps.data.mel_fmin, 
-              hps.data.mel_fmax)
           y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
         y_hat = y_hat.float()
         y_hat_mel = mel_spectrogram_torch(
