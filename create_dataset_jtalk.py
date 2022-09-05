@@ -13,7 +13,7 @@ from scipy.io import wavfile
 NUM_MAX_SID = 255
 #JVS+Zun+Sora+Me+Tsum+Tsuk+NICT*2 = 107
 NUM_TRAINED_SPEAKER = 107
-ZUNDAMON_SID = 100
+ZUNDAMON_SID = 101
 MY_SID = 0
 
 
@@ -388,7 +388,7 @@ def main():
     print(filename)
     if args.multi_target != None:
         n_spk = create_dataset_multi_character(filename, args.multi_target)
-    elif args.target != 9999 and args.target == 100:
+    elif args.target != 9999 and args.target == ZUNDAMON_SID:
         n_spk = create_dataset_zundamon(filename)
     elif args.target != 9999:
         n_spk = create_dataset_character(filename, args.target)
