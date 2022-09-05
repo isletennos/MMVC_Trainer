@@ -388,7 +388,7 @@ def main():
     print(filename)
     if args.multi_target != None:
         n_spk = create_dataset_multi_character(filename, args.multi_target)
-    elif args.target != 9999 and args.target == 101:
+    elif args.target != 9999 and args.target == ZUNDAMON_SID:
         n_spk = create_dataset_zundamon(filename)
     elif args.target != 9999:
         n_spk = create_dataset_character(filename, args.target)
