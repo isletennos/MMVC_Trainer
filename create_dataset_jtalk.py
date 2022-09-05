@@ -13,7 +13,7 @@ from scipy.io import wavfile
 NUM_MAX_SID = 255
 #JVS+Zun+Sora+Me+Tsum+Tsuk+NICT*2 = 107
 NUM_TRAINED_SPEAKER = 107
-ZUNDAMON_SID = 100
+ZUNDAMON_SID = 101
 MY_SID = 0
 
 
@@ -378,9 +378,9 @@ def main():
     parser.add_argument('-s', '--sr', type=int, default=24000,
                         help='sampling rate (default = 24000)')
     parser.add_argument('-t', '--target', type=int, default=9999,
-                        help='pre_traind targetid (zundamon = 100, sora = 101, methane = 102, tsumugi = 103)')
+                        help='pre_traind targetid (zundamon = 101, sora = 102, methane = 103, tsumugi = 104)')
     parser.add_argument('-m', '--multi_target', type=str, default=None,
-                        help='pre_traind targetid (zundamon = 100, sora = 101, methane = 102, tsumugi = 103)')
+                        help='pre_traind targetid (zundamon = 101, sora = 102, methane = 103, tsumugi = 104)')
     parser.add_argument('-c', '--config', type=str, default="./configs/baseconfig.json",
                         help='JSON file for configuration')
     args = parser.parse_args()
@@ -388,7 +388,7 @@ def main():
     print(filename)
     if args.multi_target != None:
         n_spk = create_dataset_multi_character(filename, args.multi_target)
-    elif args.target != 9999 and args.target == 100:
+    elif args.target != 9999 and args.target == 101:
         n_spk = create_dataset_zundamon(filename)
     elif args.target != 9999:
         n_spk = create_dataset_character(filename, args.target)

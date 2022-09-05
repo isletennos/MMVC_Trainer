@@ -18,13 +18,13 @@
     "warmup_epochs": 0,
     "c_mel": 45,
     "c_kl": 1.0,
-    "note_kl": 0.25
+    "note_kl": 0.10
   },
   "data": {
-    "training_files": "filelists/dec_not_propagation_label_and_change_melspec_textful.txt",
-    "validation_files": "filelists/dec_not_propagation_label_and_change_melspec_textful_val.txt",
-    "training_files_notext": "filelists/dec_not_propagation_label_and_change_melspec_textless.txt",
-    "validation_files_notext": "filelists/dec_not_propagation_label_and_change_melspec_val_textless.txt",
+    "training_files": "filelists/train_config_textful.txt",
+    "validation_files": "filelists/train_config_textful_val.txt",
+    "training_files_notext": "filelists/train_config_textless.txt",
+    "validation_files_notext": "filelists/train_config_val_textless.txt",
     "Correspondence": "filelists/dec_not_propagation_label_and_change_melspec_val_textless.txt",
     "text_cleaners": [
       "japanese_cleaners"
@@ -38,7 +38,7 @@
     "mel_fmin": 0.0,
     "mel_fmax": null,
     "add_blank": true,
-    "n_speakers": 110,
+    "n_speakers": 255,
     "cleaned_text": false
   },
   "model": {
@@ -87,7 +87,7 @@
     ],
     "n_layers_q": 3,
     "use_spectral_norm": false,
-    "n_flow": 8,
+    "n_flow": 12,
     "gin_channels": 256,
     "n_note": 79
   },
@@ -95,19 +95,19 @@
     "os_type": "linux"
   },
   "augmentation": {
-    "enable"               : false,
-    "gain_p"               : 0.5,
-    "min_gain_in_db"       : -10,
-    "max_gain_in_db"       :  10,
-    "time_stretch_p"       : 0.5,
-    "min_rate"             : 0.75,
-    "max_rate"             : 1.25,
-    "pitch_shift_p"        : 0.0,
-    "min_semitones"        : -4.0,
-    "max_semitones"        :  4.0,
-    "add_gaussian_noise_p" : 0.0,
-    "min_amplitude"        : 0.001,
-    "max_amplitude"        : 0.04,
-    "frequency_mask_p"     : 0.0
+    "enable": false,
+    "gain_p": 0.5,
+    "min_gain_in_db": -10,
+    "max_gain_in_db": 10,
+    "time_stretch_p": 0.5,
+    "min_rate": 0.75,
+    "max_rate": 1.25,
+    "pitch_shift_p": 0.0,
+    "min_semitones": -4.0,
+    "max_semitones": 4.0,
+    "add_gaussian_noise_p": 0.0,
+    "min_amplitude": 0.001,
+    "max_amplitude": 0.04,
+    "frequency_mask_p": 0.0
   }
 }
