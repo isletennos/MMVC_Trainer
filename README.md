@@ -67,7 +67,8 @@ community(discord):https://discord.gg/PgspuDSTEc
 ## Requirement
 ・Google アカウント
 ## Install
-このリポジトリをダウンロードして、展開、展開したディレクトリをgoogle drive上にアップロードしてください。
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/gist/Srgr0/a1d279de26ad213c4cbd93258bbe8262/mmvc-clone-to-googledrive.ipynb)    
+上のリンクからGoogle Colaboratoryを開いて、中のセルを実行してください。
 ## Usage
 ### チュートリアル : ずんだもんになる
 本チュートリアルではずんだもん(SSS LLC.)の音声データを利用します。  
