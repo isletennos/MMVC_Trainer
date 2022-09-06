@@ -66,7 +66,7 @@ def save_vc_sample(hps, loader, collate, generator, name):
     target_id = hps.others.target_id
 
     with torch.no_grad():
-      dataset = loader(hps.data.validation_files_notext, hps.data)
+      dataset = loader(hps.data.validation_files_notext, hps.data, disable_tqdm=True)
       data = dataset.get_audio_text_speaker_pair([input_filename, source_id, "a"])
       data = collate()([data])
       x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src = [x.cuda(0) for x in data]
