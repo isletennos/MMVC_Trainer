@@ -181,7 +181,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     speakers = speakers.cuda(rank, non_blocking=True)
 
     with autocast(enabled=hps.train.fp16_run):
-      y_hat, l_length, attn, ids_slice, x_mask, z_mask,\
+      y_hat, attn, ids_slice, x_mask, z_mask,\
       (z, z_p, m_p, logs_p, m_q, logs_q), yr_hat = net_g(x, x_lengths, spec, spec_lengths, speakers)
       mel = spec_to_mel_torch(
           spec, 
@@ -190,8 +190,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           hps.data.sampling_rate,
           hps.data.mel_fmin, 
           hps.data.mel_fmax)
-      #y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
-      y_mel = mel
+      y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
     y_hat = y_hat.float()
     y_hat_mel = mel_spectrogram_torch(
         y_hat.squeeze(1), 
@@ -203,8 +202,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         hps.data.mel_fmin, 
         hps.data.mel_fmax
     )
-    #y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
-    y = y
+    y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
 
     # Discriminator
     y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
@@ -325,7 +323,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
         with autocast(enabled=hps.train.fp16_run):
           #Generator
           y_hat, attn, ids_slice, x_mask, z_mask,\
-          (z, z_p, m_p, logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, speakers)
+          (z, z_p, m_p, logs_p, m_q, logs_q), yr_hat = generator(x, x_lengths, spec, spec_lengths, speakers)
 
           mel = spec_to_mel_torch(
               spec, 
@@ -334,8 +332,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
               hps.data.sampling_rate,
               hps.data.mel_fmin, 
               hps.data.mel_fmax)
-          #y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
-          y_mel = mel
+          y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
         y_hat = y_hat.float()
         y_hat_mel = mel_spectrogram_torch(
             y_hat.squeeze(1), 
@@ -349,8 +346,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
         )
         batch_num = batch_idx
 
-        #y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
-        y = y
+        y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
 
         with autocast(enabled=hps.train.fp16_run):
           with autocast(enabled=False):

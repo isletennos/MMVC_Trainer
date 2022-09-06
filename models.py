@@ -496,8 +496,7 @@ class SynthesizerTrn(nn.Module):
     logs_p = torch.matmul(attn.squeeze(1), logs_p.transpose(1, 2)).transpose(1, 2)
 
     z_slice, ids_slice = commons.rand_slice_segments(z, y_lengths, self.segment_size)
-    #o = self.dec(z_slice, g=g)
-    o = self.dec(z, g=g)
+    o = self.dec(z_slice, g=g)
 
     # vc loss
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
@@ -520,7 +519,7 @@ class SynthesizerTrn(nn.Module):
     vc_zr_hat = self.flow(vc_zr_p, vc_yr_mask, g=g_src, reverse=True)
     vc_or_hat = self.dec(vc_zr_hat * vc_yr_mask, g=g_src)
 
-    return o, l_length, attn, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q), vc_or_hat
+    return o, attn, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q), vc_or_hat
 
   def voice_conversion(self, y, y_lengths, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
