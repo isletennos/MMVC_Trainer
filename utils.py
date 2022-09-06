@@ -10,6 +10,7 @@ from scipy.io.wavfile import read
 import torch
 import wave
 import csv
+import warnings
 
 MATPLOTLIB_FLAG = False
 
@@ -165,7 +166,10 @@ def plot_alignment_to_numpy(alignment, info=None):
 
 
 def load_wav_to_torch(full_path):
-  sampling_rate, data = read(full_path)
+  #音声にメタデータが含まれる際のWavFileWarning対策
+  with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    sampling_rate, data = read(full_path)
   return torch.FloatTensor(data.astype(np.float32)), sampling_rate
 
 
