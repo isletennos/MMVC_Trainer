@@ -67,7 +67,7 @@ community(discord):https://discord.gg/PgspuDSTEc
 ## Requirement
 ・Google アカウント
 ## Install
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/gist/Srgr0/a1d279de26ad213c4cbd93258bbe8262/mmvc-clone-to-googledrive.ipynb)    
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com//isletennos/MMVC_Trainer/blob/main/notebook/00_Clone_Repo.ipynb)    
 上のリンクからGoogle Colaboratoryを開いて、中のセルを実行してください。
 ## Usage
 ### チュートリアル : ずんだもんになる
