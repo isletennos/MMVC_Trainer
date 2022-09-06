@@ -84,6 +84,10 @@ def run(rank, n_gpus, hps):
   if cpu_count > 8:
     cpu_count = 8
 
+  if hasattr(hps.others, "input_filename"):
+    assert os.path.isfile(hps.others.input_filename), "VC test file does not exist."
+    assert hasattr(hps.others, "source_id") and hasattr(hps.others, "target_id"), "VC source_id and target_id are required."
+
   dist.init_process_group(backend=backend_type, init_method='env://', world_size=n_gpus, rank=rank)
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
