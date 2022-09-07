@@ -112,11 +112,8 @@ dataset
 ```
 
 #### Ph2. モデルの学習方法
-1. 下記リンクより、「G_180000.pth」「D_180000.pth」をダウンロード。 
-https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sharing
-2. 「G_180000.pth」「D_180000.pth」をfine_modelに配置します。**(良く忘れるポイントなので要注意！)**  
-3. notebookディレクトリにある「Create_Configfile_zundamon.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成します  
-4. configsに作成されたtrain_config_zundamon.jsonの  
+1. notebookディレクトリにある「Create_Configfile_zundamon.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成します  
+2. configsに作成されたtrain_config_zundamon.jsonの  
  
       - "eval_interval"   
         modelを保存する間隔です。
@@ -125,7 +122,7 @@ https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sha
 
     上記2項目を環境に応じて最適化してください。わからない方はそのままで大丈夫です。  
 
-5. notebookディレクトリにある「Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
+3. notebookディレクトリにある「Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
     logs/にモデルが生成されます。
 
 #### Ph3. 学習したモデルの性能検証
