@@ -1,7 +1,11 @@
 {
   "train": {
-    "log_interval": 1000,
-    "eval_interval": 2000,
+    "eval_interval": 1000,
+    "backup": {
+      "interval": 2000,
+      "best": true,
+      "g_only": true
+    },
     "seed": 1234,
     "epochs": 10000,
     "learning_rate": 0.0002,
@@ -89,7 +93,10 @@
     "gin_channels": 256
   },
   "others": {
-    "os_type": "linux"
+    "os_type": "linux",
+    "input_filename": "dataset/test_sample.wav",
+    "source_id":107,
+    "target_id":100
   },
   "augmentation": {
     "enable"               : true,

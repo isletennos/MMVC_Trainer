@@ -18,7 +18,7 @@ import datetime
 import pytz
 import time
 from tqdm import tqdm
-#import warnings
+import numpy as np
 
 
 import commons
@@ -84,6 +84,10 @@ def run(rank, n_gpus, hps):
   if cpu_count > 8:
     cpu_count = 8
 
+  if hasattr(hps.others, "input_filename"):
+    assert os.path.isfile(hps.others.input_filename), "VC test file does not exist."
+    assert hasattr(hps.others, "source_id") and hasattr(hps.others, "target_id"), "VC source_id and target_id are required."
+
   dist.init_process_group(backend=backend_type, init_method='env://', world_size=n_gpus, rank=rank)
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
@@ -133,16 +137,16 @@ def run(rank, n_gpus, hps):
   if hps.fine_flag:
       logger.info('Load model : '+str(hps.fine_model_g))
       logger.info('Load model : '+str(hps.fine_model_d))
-      _, _, _, epoch_str = utils.load_checkpoint(hps.fine_model_g, net_g, optim_g)
-      _, _, _, epoch_str = utils.load_checkpoint(hps.fine_model_d, net_d, optim_d)
+      _, _, _, global_step = utils.load_checkpoint(hps.fine_model_g, net_g, optim_g)
+      _, _, _, global_step = utils.load_checkpoint(hps.fine_model_d, net_d, optim_d)
       epoch_str = 1
       global_step = 0
 
   else:
     try:
-      _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g)
-      _, _, _, epoch_str = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "D_*.pth"), net_d, optim_d)
-      global_step = (epoch_str - 1) * len(train_loader)
+      _, _, _, global_step = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g)
+      _, _, _, global_step = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "D_*.pth"), net_d, optim_d)
+      epoch_str = global_step // len(train_loader) + 1
     except:
       epoch_str = 1
       global_step = 0
@@ -233,7 +237,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     scaler.update()
 
     if rank==0:
-      if global_step % hps.train.log_interval == 0:
+      eval_loss_mel = None
+      if global_step % hps.train.eval_interval == 0:
         lr = optim_g.param_groups[0]['lr']
         losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_kl]
         logger.info('Train Epoch: {} [{:.0f}%]'.format(
@@ -259,15 +264,36 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           global_step=global_step, 
           images=image_dict,
           scalars=scalar_dict)
-        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_latest_99999999.pth"))
-        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_latest_99999999.pth"))
+        eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger)
+        eval_loss_mel = float(eval_loss_dict["loss/g/mel"])
+        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_latest_99999999.pth"))
+        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_latest_99999999.pth"))
 
-      if global_step % hps.train.eval_interval == 0 and global_step != 0:
-        evaluate(hps, net_g, eval_loader, writer_eval, logger)
-        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
-        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
-        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_latest_99999999.pth"))
-        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_latest_99999999.pth"))
+      if global_step % hps.train.backup.interval == 0 and global_step != 0:
+        if global_step % hps.train.backup.interval == 0 and global_step % hps.train.eval_interval == 0:
+          if hps.train.backup.g_only == False:
+            utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
+          utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, global_step)
+          utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
+        else:
+          eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger)
+          eval_loss_mel = float(eval_loss_dict["loss/g/mel"])
+          if hps.train.backup.g_only == False:
+            utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
+          utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, global_step)
+          utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
+          utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_latest_99999999.pth"))
+          utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_latest_99999999.pth"))
+
+      if hps.train.backup.best == True and eval_loss_mel is not None and eval_loss_mel < hps.best_loss_mel and global_step != 0:
+        if hps.train.backup.g_only == False:
+          utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_best.pth"))
+
+        utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, "best")
+        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_best.pth"))
+        utils.save_best_log(hps.best_log_path, global_step, eval_loss_mel, datetime.datetime.now(pytz.timezone('Asia/Tokyo')))
+        hps.best_loss_mel = eval_loss_mel
+
     global_step += 1
 
  
@@ -328,6 +354,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
       global_step=global_step, 
       scalars=scalar_dict,
     )
-                           
+    return scalar_dict
+
 if __name__ == "__main__":
   main()
