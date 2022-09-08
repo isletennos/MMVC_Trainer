@@ -3,6 +3,7 @@ import json
 import argparse
 import itertools
 import math
+import sys
 from psutil import cpu_count
 import torch
 from torch import nn, optim
@@ -156,7 +157,7 @@ def run(rank, n_gpus, hps):
 
   scaler = GradScaler(enabled=hps.train.fp16_run)
 
-  for epoch in range(epoch_str, hps.train.epochs + 1):
+  for epoch in range(epoch_str, sys.maxsize):
     if rank==0:
       train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
     else:
@@ -285,7 +286,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_latest_99999999.pth"))
           utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_latest_99999999.pth"))
 
-      if hps.train.backup.best == True and eval_loss_mel is not None and eval_loss_mel < hps.best_loss_mel and global_step != 0:
+      if hps.train.best == True and eval_loss_mel is not None and eval_loss_mel < hps.best_loss_mel and global_step != 0:
         utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, "best")
         utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "G_best.pth"))
         utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, epoch, os.path.join(hps.model_dir, "D_best.pth"))
@@ -298,54 +299,63 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 def evaluate(hps, generator, eval_loader, writer_eval, logger):
     scalar_dict = {}
     scalar_dict.update({"loss/g/mel": 0.0, "loss/g/kl": 0.0})
-    with torch.no_grad():
-      #evalのデータセットを一周する
-      for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(tqdm(eval_loader, desc="Epoch {}".format("eval"))):
-        x, x_lengths = x.cuda(0), x_lengths.cuda(0)
-        spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
-        y, y_lengths = y.cuda(0), y_lengths.cuda(0)
-        speakers = speakers.cuda(0)
-        #autocastはfp16のおまじない
-        with autocast(enabled=hps.train.fp16_run):
-          #Generator
-          y_hat, attn, ids_slice, x_mask, z_mask,\
-          (z, z_p, m_p, logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, speakers)
+    for i in tqdm(range(hps.train.backup.mean_of_num_eval), desc="Try {} of ".format("eval")):
+      temp_gmel = 0.0
+      temp_gkl = 0.0
+      with torch.no_grad():
+        #evalのデータセットを一周する
+        for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(eval_loader):
+          x, x_lengths = x.cuda(0), x_lengths.cuda(0)
+          spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
+          y, y_lengths = y.cuda(0), y_lengths.cuda(0)
+          speakers = speakers.cuda(0)
+          #autocastはfp16のおまじない
+          with autocast(enabled=hps.train.fp16_run):
+            #Generator
+            y_hat, attn, ids_slice, x_mask, z_mask,\
+            (z, z_p, m_p, logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, speakers)
 
-          mel = spec_to_mel_torch(
-              spec, 
+            mel = spec_to_mel_torch(
+                spec, 
+                hps.data.filter_length, 
+                hps.data.n_mel_channels, 
+                hps.data.sampling_rate,
+                hps.data.mel_fmin, 
+                hps.data.mel_fmax)
+            y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
+          y_hat = y_hat.float()
+          y_hat_mel = mel_spectrogram_torch(
+              y_hat.squeeze(1), 
               hps.data.filter_length, 
               hps.data.n_mel_channels, 
-              hps.data.sampling_rate,
+              hps.data.sampling_rate, 
+              hps.data.hop_length, 
+              hps.data.win_length, 
               hps.data.mel_fmin, 
-              hps.data.mel_fmax)
-          y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
-        y_hat = y_hat.float()
-        y_hat_mel = mel_spectrogram_torch(
-            y_hat.squeeze(1), 
-            hps.data.filter_length, 
-            hps.data.n_mel_channels, 
-            hps.data.sampling_rate, 
-            hps.data.hop_length, 
-            hps.data.win_length, 
-            hps.data.mel_fmin, 
-            hps.data.mel_fmax
-        )
-        batch_num = batch_idx
+              hps.data.mel_fmax
+          )
+          batch_num = batch_idx
 
-        y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
+          y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
 
-        with autocast(enabled=hps.train.fp16_run):
-          with autocast(enabled=False):
-            loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-            loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
+          with autocast(enabled=hps.train.fp16_run):
+            with autocast(enabled=False):
+              loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
+              loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
-        scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] + loss_mel
-        scalar_dict["loss/g/kl"] = scalar_dict["loss/g/kl"] + loss_kl
+          scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] + loss_mel
+          scalar_dict["loss/g/kl"] = scalar_dict["loss/g/kl"] + loss_kl
+          temp_gmel = temp_gmel + loss_mel
+          temp_gkl = temp_gkl + loss_kl
+
+        temp_gmel = temp_gmel / (batch_num+1)
+        temp_gkl = temp_gkl / (batch_num+1)
+        print("loss/g/mel : {} lloss/g/kl : {}".format(str(temp_gmel), str(temp_gkl)))
       
-      #lossをepoch1周の結果をiter単位の平均値に
-      scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] / (batch_num+1)
-      scalar_dict["loss/g/kl"] = scalar_dict["loss/g/kl"] / (batch_num+1)
-      logger.info("loss/g/mel : {} lloss/g/kl : {}".format(str(scalar_dict["loss/g/mel"]), str(scalar_dict["loss/g/kl"])))
+    #lossをepoch1周の結果をiter単位の平均値に
+    scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] / ((batch_num+1) * hps.train.backup.mean_of_num_eval)
+    scalar_dict["loss/g/kl"] = scalar_dict["loss/g/kl"] / ((batch_num+1) * hps.train.backup.mean_of_num_eval)
+    logger.info("loss/g/mel : {} lloss/g/kl : {}".format(str(scalar_dict["loss/g/mel"]), str(scalar_dict["loss/g/kl"])))
 
     utils.summarize(
       writer=writer_eval,
