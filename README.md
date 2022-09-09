@@ -80,12 +80,12 @@ JVSコーパスやITAコーパス等を台本にし、100文程度読み上げ�
 ※MMVC用にテキストを分割したITAコーパスです。ご利用ください。  
 https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing  
 
-2. dataset/textful/000_myvoice に音声データとテキストデータを配置します。 
+2. dataset/textful/00_myvoice に音声データとテキストデータを配置します。 
 最終的に下記のようなディレクトリ構成になります。  
 ```
 dataset
 ├── textful
-│   ├── 000_myvoice
+│   ├── 00_myvoice
 │   │   ├── text
 │   │   │   ├── s_voice_001.txt
 │   │   │   ├── s_voice_002.txt
@@ -94,7 +94,7 @@ dataset
 │   │        ├── s_voice_001.wav
 │   │        ├── s_voice_002.wav
 │   │        ├── ...
-│   │── 001_target
+│   │── 01_target
 │   │   ├── text
 │   │   └── wav
 │   │
@@ -112,7 +112,7 @@ dataset
 ```
 
 #### Ph2. モデルの学習方法
-1. notebookディレクトリにある「Create_Configfile_zundamon.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成します  
+1. notebookディレクトリにある「01_Create_Configfile.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成します  
 2. configsに作成されたtrain_config_zundamon.jsonの  
  
       - "eval_interval"   
@@ -122,11 +122,11 @@ dataset
 
     上記2項目を環境に応じて最適化してください。わからない方はそのままで大丈夫です。  
 
-3. notebookディレクトリにある「Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
+3. notebookディレクトリにある「02_Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
     logs/にモデルが生成されます。
 
 #### Ph3. 学習したモデルの性能検証
-1. notebookディレクトリにある「MMVC_Interface.ipynb」をgoogle colab 上で実行してください。
+1. notebookディレクトリにある「03_MMVC_Interface.ipynb」をgoogle colab 上で実行してください。
 ### 好きなキャラクターの声になる
 #### Ph1. 自分の音声の録音と音声データの配置 及びターゲット音声データの配置
 1. 自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。    
@@ -138,7 +138,7 @@ dataset
 ```
 dataset
 ├── textful
-│   ├── 000_myvoice
+│   ├── 00_myvoice
 │   │   ├── text
 │   │   │   ├── s_voice_001.txt
 │   │   │   ├── s_voice_002.txt
@@ -147,7 +147,7 @@ dataset
 │   │        ├── s_voice_001.wav
 │   │        ├── s_voice_002.wav
 │   │        ├── ...
-│   │── 001_target
+│   │── 01_target
 │   │   ├── text
 │   │   │   ├── t_voice_001.txt
 │   │   │   ├── t_voice_002.txt
