@@ -1,13 +1,13 @@
 {
   "train": {
     "eval_interval": 1000,
+    "best": true,
     "backup": {
       "interval": 2000,
-      "best": true,
-      "g_only": true
+      "g_only": true,
+      "mean_of_num_eval": 10
     },
     "seed": 1234,
-    "epochs": 10000,
     "learning_rate": 0.0002,
     "betas": [
       0.8,

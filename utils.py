@@ -11,6 +11,7 @@ import torch
 import wave
 import csv
 from mel_processing import spec_to_mel_torch
+import warnings
 
 MATPLOTLIB_FLAG = False
 
@@ -70,7 +71,7 @@ def save_vc_sample(hps, loader, collate, generator, name):
   if type(target_ids) != list:
     target_ids = [target_ids]
 
-  dataset = loader(hps.data.validation_files_notext, hps.data)
+  dataset = loader("", hps.data, no_use_textfile=True, disable_tqdm=True)
   data = dataset.get_audio_text_speaker_pair([input_filename, source_id, "a"])
   data = collate()([data])
   x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src = [x.cuda(0) for x in data]
@@ -83,7 +84,6 @@ def save_vc_sample(hps, loader, collate, generator, name):
     hps.data.mel_fmax)
   if hps.model.use_mel_train:
     spec = mel
-
   for target_id in target_ids:
     with torch.no_grad():
       sid_tgt = torch.LongTensor([target_id]).cuda(0)
@@ -181,7 +181,10 @@ def plot_alignment_to_numpy(alignment, info=None):
 
 
 def load_wav_to_torch(full_path):
-  sampling_rate, data = read(full_path)
+  #音声にメタデータが含まれる際のWavFileWarning対策
+  with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    sampling_rate, data = read(full_path)
   return torch.FloatTensor(data.astype(np.float32)), sampling_rate
 
 
