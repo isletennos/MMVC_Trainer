@@ -10,6 +10,7 @@ from scipy.io.wavfile import read
 import torch
 import wave
 import csv
+import warnings
 
 MATPLOTLIB_FLAG = False
 
@@ -59,29 +60,34 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
 
 
 def save_vc_sample(hps, loader, collate, generator, name):
-  if hasattr(hps.others, "input_filename"):
-    input_filename = hps.others.input_filename
-    source_id = hps.others.source_id
-    target_id = hps.others.target_id
+  if not hasattr(hps.others, "input_filename"):
+    return
 
+  input_filename = hps.others.input_filename
+  source_id = hps.others.source_id
+  target_ids = hps.others.target_id
+
+  if type(target_ids) != list:
+    target_ids = [target_ids]
+
+  dataset = loader(hps.data.validation_files_notext, hps.data, disable_tqdm=True)
+  data = dataset.get_audio_text_speaker_pair([input_filename, source_id, "a"])
+  data = collate()([data])
+  x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src = [x.cuda(0) for x in data]
+  for target_id in target_ids:
     with torch.no_grad():
-      dataset = loader(hps.data.validation_files_notext, hps.data)
-      data = dataset.get_audio_text_speaker_pair([input_filename, source_id, "a"])
-      data = collate()([data])
-      x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src = [x.cuda(0) for x in data]
       sid_tgt = torch.LongTensor([target_id]).cuda(0)
       audio = generator.module.voice_conversion(spec, spec_lengths, sid_src=sid_src, sid_tgt=sid_tgt)[0][0,0].data.cpu().float().numpy()
 
     audio = audio * hps.data.max_wav_value
     wav = audio.astype(np.int16).tobytes()
 
-    output_filename = os.path.join(hps.model_dir, "vc_{}.wav".format(name))
-    fh = wave.open(output_filename, 'wb')
-    fh.setnchannels(1)
-    fh.setsampwidth(2)
-    fh.setframerate(hps.data.sampling_rate)
-    fh.writeframes(wav)
-    fh.close()
+    output_filename = os.path.join(hps.model_dir, f"vc_{target_id}_{name}.wav")
+    with wave.open(output_filename, 'wb') as fh:
+      fh.setnchannels(1)
+      fh.setsampwidth(2)
+      fh.setframerate(hps.data.sampling_rate)
+      fh.writeframes(wav)
 
 
 def save_best_log(best_log_path, global_step, loss_mel_value, date):
@@ -165,7 +171,10 @@ def plot_alignment_to_numpy(alignment, info=None):
 
 
 def load_wav_to_torch(full_path):
-  sampling_rate, data = read(full_path)
+  #音声にメタデータが含まれる際のWavFileWarning対策
+  with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    sampling_rate, data = read(full_path)
   return torch.FloatTensor(data.astype(np.float32)), sampling_rate
 
 
