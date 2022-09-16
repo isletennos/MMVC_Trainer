@@ -247,7 +247,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
     if rank==0:
       eval_loss_mel = None
-      if global_step % hps.train.eval_interval == 0:
+      if global_step % hps.train.eval_interval == 0 and global_step != 0:
         lr = optim_g.param_groups[0]['lr']
         losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_kl]
         logger.info('Train Epoch: {} [{:.0f}%]'.format(
