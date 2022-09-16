@@ -345,8 +345,6 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
           )
           batch_num = batch_idx
 
-          y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
-
           with autocast(enabled=hps.train.fp16_run):
             with autocast(enabled=False):
               loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
