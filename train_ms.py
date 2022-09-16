@@ -85,6 +85,9 @@ def run(rank, n_gpus, hps):
   if cpu_count > 8:
     cpu_count = 8
 
+  if not hasattr(hps.model, "use_mel_train"):
+    hps.model.use_mel_train = False
+
   if hasattr(hps.others, "input_filename"):
     assert os.path.isfile(hps.others.input_filename), "VC test file does not exist."
     assert hasattr(hps.others, "source_id") and hasattr(hps.others, "target_id"), "VC source_id and target_id are required."
@@ -114,9 +117,13 @@ def run(rank, n_gpus, hps):
       shuffle=True)
     eval_loader = DataLoader(eval_dataset, num_workers=cpu_count, shuffle=False, pin_memory=True,
         collate_fn=collate_fn, batch_sampler=eval_sampler)
+  if hps.model.use_mel_train:
+      channels = hps.data.n_mel_channels
+  else:
+      channels = hps.data.filter_length // 2 + 1
   net_g = SynthesizerTrn(
       len(symbols),
-      hps.data.filter_length // 2 + 1,
+      channels,
       hps.train.segment_size // hps.data.hop_length,
       n_speakers=hps.data.n_speakers,
       **hps.model).cuda(rank)
@@ -184,17 +191,18 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     spec, spec_lengths = spec.cuda(rank, non_blocking=True), spec_lengths.cuda(rank, non_blocking=True)
     y, y_lengths = y.cuda(rank, non_blocking=True), y_lengths.cuda(rank, non_blocking=True)
     speakers = speakers.cuda(rank, non_blocking=True)
-
+    mel = spec_to_mel_torch(
+        spec, 
+        hps.data.filter_length, 
+        hps.data.n_mel_channels, 
+        hps.data.sampling_rate,
+        hps.data.mel_fmin, 
+        hps.data.mel_fmax)
+    if hps.model.use_mel_train:
+        spec = mel
     with autocast(enabled=hps.train.fp16_run):
       y_hat, attn, ids_slice, x_mask, z_mask,\
       (z, z_p, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, speakers)
-      mel = spec_to_mel_torch(
-          spec, 
-          hps.data.filter_length, 
-          hps.data.n_mel_channels, 
-          hps.data.sampling_rate,
-          hps.data.mel_fmin, 
-          hps.data.mel_fmax)
       y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
     y_hat = y_hat.float()
     y_hat_mel = mel_spectrogram_torch(
@@ -239,7 +247,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
     if rank==0:
       eval_loss_mel = None
-      if global_step % hps.train.eval_interval == 0:
+      if global_step % hps.train.eval_interval == 0 and global_step != 0:
         lr = optim_g.param_groups[0]['lr']
         losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_kl]
         logger.info('Train Epoch: {} [{:.0f}%]'.format(
@@ -309,19 +317,20 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
           spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
           y, y_lengths = y.cuda(0), y_lengths.cuda(0)
           speakers = speakers.cuda(0)
+          mel = spec_to_mel_torch(
+              spec, 
+              hps.data.filter_length, 
+              hps.data.n_mel_channels, 
+              hps.data.sampling_rate,
+              hps.data.mel_fmin, 
+              hps.data.mel_fmax)
+          if hps.model.use_mel_train:
+              spec = mel
           #autocastはfp16のおまじない
           with autocast(enabled=hps.train.fp16_run):
             #Generator
             y_hat, attn, ids_slice, x_mask, z_mask,\
             (z, z_p, m_p, logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, speakers)
-
-            mel = spec_to_mel_torch(
-                spec, 
-                hps.data.filter_length, 
-                hps.data.n_mel_channels, 
-                hps.data.sampling_rate,
-                hps.data.mel_fmin, 
-                hps.data.mel_fmax)
             y_mel = commons.slice_segments(mel, ids_slice, hps.train.segment_size // hps.data.hop_length)
           y_hat = y_hat.float()
           y_hat_mel = mel_spectrogram_torch(
@@ -335,8 +344,6 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
               hps.data.mel_fmax
           )
           batch_num = batch_idx
-
-          y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
 
           with autocast(enabled=hps.train.fp16_run):
             with autocast(enabled=False):
