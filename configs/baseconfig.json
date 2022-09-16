@@ -90,7 +90,8 @@
     "n_layers_q": 3,
     "use_spectral_norm": false,
     "n_flow": 8,
-    "gin_channels": 256
+    "gin_channels": 256,
+    "use_mel_train": false
   },
   "others": {
     "os_type": "linux",
