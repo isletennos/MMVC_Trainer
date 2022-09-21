@@ -289,7 +289,7 @@ def create_dataset_zundamon(filename, my_sid):
         counter = counter +1
     Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
 
-    speaker_id = 100
+    speaker_id = 101
     d = zundamon_path
     wav_file_list = glob.glob(d + "/wav/*.wav")
     lab_file_list = glob.glob(d + "/text/*.txt")

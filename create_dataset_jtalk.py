@@ -378,9 +378,9 @@ def main():
     parser.add_argument('-s', '--sr', type=int, default=24000,
                         help='sampling rate (default = 24000)')
     parser.add_argument('-t', '--target', type=int, default=9999,
-                        help='pre_traind targetid (zundamon = 100, sora = 101, methane = 102, tsumugi = 103)')
+                        help='pre_traind targetid (zundamon = 101, sora = 102, methane = 103, tsumugi = 104)')
     parser.add_argument('-m', '--multi_target', type=str, default=None,
-                        help='pre_traind targetid (zundamon = 100, sora = 101, methane = 102, tsumugi = 103)')
+                        help='pre_traind targetid (zundamon = 101, sora = 102, methane = 103, tsumugi = 104)')
     parser.add_argument('-c', '--config', type=str, default="./configs/baseconfig.json",
                         help='JSON file for configuration')
     args = parser.parse_args()
