@@ -13,7 +13,7 @@ from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from commons import init_weights, get_padding
 
-from text import index_to_symbol, sample_phonemes_text, cleaned_text_to_sequence
+from text import cleaned_text_to_sequence
 from mel_processing import spectrogram_torch
 
 '''
@@ -498,15 +498,13 @@ class SynthesizerTrn(nn.Module):
     z_slice, ids_slice = commons.rand_slice_segments(z, y_lengths, self.segment_size)
     o = self.dec(z_slice, g=g)
 
-    # vc loss
+    return o, attn, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
+
+  def vc_cycle(self, spec, spec_lengths, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
-    sid_srcs = torch.zeros_like(sid) # バッチサイズとdeviceをsidの情報を使って入れ物作る
-    sid_tgts = torch.zeros_like(sid)
-    sid_srcs[:] = self.sid_src
-    sid_tgts[:] = self.sid_tgt
-    g_src = self.emb_g(sid_srcs).unsqueeze(-1)
-    g_tgt = self.emb_g(sid_tgts).unsqueeze(-1)
-    vc_z, vc_m_q, vc_logs_q, vc_y_mask = self.enc_q(y, y_lengths, g=g_src)
+    g_src = self.emb_g(sid_src).unsqueeze(-1)
+    g_tgt = self.emb_g(sid_tgt).unsqueeze(-1)
+    vc_z, vc_m_q, vc_logs_q, vc_y_mask = self.enc_q(spec, spec_lengths, g=g_src)
     vc_z_p = self.flow(vc_z, vc_y_mask, g=g_src)
     vc_z_hat = self.flow(vc_z_p, vc_y_mask, g=g_tgt, reverse=True)
     vc_o_hat = self.dec(vc_z_hat * vc_y_mask, g=g_tgt)
@@ -514,12 +512,14 @@ class SynthesizerTrn(nn.Module):
                 self.sampling_rate, self.hop_length, self.win_length,
                 center=False)
     vc_y_hat = torch.squeeze(vc_spec, 0)
-    vc_zr, vc_mr_q, vc_logsr_q, vc_yr_mask = self.enc_q(vc_y_hat, y_lengths, g=g_tgt)
-    vc_zr_p = self.flow(vc_zr, vc_yr_mask, g=g_tgt)
-    vc_zr_hat = self.flow(vc_zr_p, vc_yr_mask, g=g_src, reverse=True)
-    vc_or_hat = self.dec(vc_zr_hat * vc_yr_mask, g=g_src)
-
-    return o, attn, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q), vc_or_hat
+    vc_z_r, vc_mr_q, vc_logsr_q, vc_y_r_mask = self.enc_q(vc_y_hat, spec_lengths, g=g_tgt)
+    vc_z_r_p = self.flow(vc_z_r, vc_y_r_mask, g=g_tgt)
+    vc_z_r_hat = self.flow(vc_z_r_p, vc_y_r_mask, g=g_src, reverse=True)
+    vc_o_r_hat = self.dec(vc_z_r_hat * vc_y_r_mask, g=g_src)
+    vc_spec_r = spectrogram_torch(vc_o_r_hat.squeeze(1), self.filter_length,
+                self.sampling_rate, self.hop_length, self.win_length,
+                center=False)
+    return vc_spec_r
 
   def voice_conversion(self, y, y_lengths, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
@@ -530,26 +530,6 @@ class SynthesizerTrn(nn.Module):
     z_hat = self.flow(z_p, y_mask, g=g_tgt, reverse=True)
     o_hat = self.dec(z_hat * y_mask, g=g_tgt)
     return o_hat, y_mask, (z, z_p, z_hat)
-
-  def voice_conversion_reverse(self, y, y_lengths, sid_src, sid_tgt):
-    assert self.n_speakers > 0, "n_speakers have to be larger than 0."
-    sid_srcs = torch.torch.LongTensor([sid_src])
-    sid_tgts = torch.torch.LongTensor([sid_tgt])
-    g_src = self.emb_g(sid_srcs).unsqueeze(-1)
-    g_tgt = self.emb_g(sid_tgts).unsqueeze(-1)
-    vc_z, vc_m_q, vc_logs_q, vc_y_mask = self.enc_q(y, y_lengths, g=g_src)
-    vc_z_p = self.flow(vc_z, vc_y_mask, g=g_src)
-    vc_z_hat = self.flow(vc_z_p, vc_y_mask, g=g_tgt, reverse=True)
-    vc_o_hat = self.dec(vc_z_hat * vc_y_mask, g=g_tgt)
-    vc_spec = spectrogram_torch(vc_o_hat, self.filter_length,
-                self.sampling_rate, self.hop_length, self.win_length,
-                center=False)
-    vc_y_hat = torch.squeeze(vc_spec, 0)
-    vc_zr, vc_mr_q, vc_logsr_q, vc_yr_mask = self.enc_q(vc_y_hat, y_lengths, g=g_tgt)
-    vc_zr_p = self.flow(vc_zr, vc_yr_mask, g=g_tgt)
-    vc_zr_hat = self.flow(vc_zr_p, vc_yr_mask, g=g_src, reverse=True)
-    vc_or_hat = self.dec(vc_zr_hat * vc_yr_mask, g=g_src)
-    return vc_or_hat, vc_y_mask, (vc_zr, vc_zr_p, vc_zr_hat)
 
   def voice_ra_pa_db(self, y, y_lengths, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
