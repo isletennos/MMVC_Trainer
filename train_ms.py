@@ -209,7 +209,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         spec = mel
     with autocast(enabled=hps.train.fp16_run):
       y_hat, attn, ids_slice, x_mask, z_mask,\
-      (z, z_p, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, speakers)
+      (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat = net_g(x, x_lengths, spec, spec_lengths, speakers)
       mel = spec_to_mel_torch(
           spec, 
           hps.data.filter_length, 
@@ -229,25 +229,19 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         hps.data.mel_fmin, 
         hps.data.mel_fmax
     )
-    y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
-
-    # VC loss
-    with torch.no_grad():
-      sid_src = torch.full_like(speakers, fill_value=source_id)
-      sid_tgt = torch.full_like(speakers, fill_value=target_id)
-      vc_spec = commons.slice_segments(spec, ids_slice, spec_segment_size)
-      vc_spec_lengths = torch.full_like(ids_slice, fill_value=spec_segment_size)
-      vc_spec_r = net_g.module.vc_cycle(vc_spec, vc_spec_lengths, sid_src, sid_tgt)
-      vc_spec_r_mel = spec_to_mel_torch(
-          vc_spec_r,
-          hps.data.filter_length, 
-          hps.data.n_mel_channels, 
-          hps.data.sampling_rate, 
-          hps.data.mel_fmin, 
-          hps.data.mel_fmax
-      )
+    vc_o_r_hat_mel = mel_spectrogram_torch(
+        vc_o_r_hat.float().squeeze(1), 
+        hps.data.filter_length, 
+        hps.data.n_mel_channels, 
+        hps.data.sampling_rate, 
+        hps.data.hop_length, 
+        hps.data.win_length, 
+        hps.data.mel_fmin, 
+        hps.data.mel_fmax
+    )
 
     # Discriminator
+    y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
     y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
     with autocast(enabled=False):
       loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(y_d_hat_r, y_d_hat_g)
@@ -263,7 +257,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
       y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
       with autocast(enabled=False):
         loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-        loss_vc = F.l1_loss(y_mel, vc_spec_r_mel) * hps.train.c_mel
+        loss_vc = F.l1_loss(y_mel, vc_o_r_hat_mel) * hps.train.c_mel
         loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
         loss_fm = feature_loss(fmap_r, fmap_g)
@@ -371,7 +365,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
           with autocast(enabled=hps.train.fp16_run):
             #Generator
             y_hat, attn, ids_slice, x_mask, z_mask,\
-            (z, z_p, m_p, logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, speakers)
+            (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat = generator(x, x_lengths, spec, spec_lengths, speakers)
 
             mel = spec_to_mel_torch(
                 spec, 
@@ -392,17 +386,13 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
                 hps.data.mel_fmin, 
                 hps.data.mel_fmax
             )
-            # VC loss
-            sid_src = torch.full_like(speakers, fill_value=source_id)
-            sid_tgt = torch.full_like(speakers, fill_value=target_id)
-            vc_spec = commons.slice_segments(spec, ids_slice, spec_segment_size)
-            vc_spec_lengths = torch.full_like(ids_slice, fill_value=spec_segment_size)
-            vc_spec_r = generator.module.vc_cycle(vc_spec, vc_spec_lengths, sid_src, sid_tgt)
-            vc_spec_r_mel = spec_to_mel_torch(
-                vc_spec_r,
+            vc_o_r_hat_mel = mel_spectrogram_torch(
+                vc_o_r_hat.float().squeeze(1), 
                 hps.data.filter_length, 
                 hps.data.n_mel_channels, 
                 hps.data.sampling_rate, 
+                hps.data.hop_length, 
+                hps.data.win_length, 
                 hps.data.mel_fmin, 
                 hps.data.mel_fmax
             )
@@ -411,7 +401,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
           with autocast(enabled=hps.train.fp16_run):
             with autocast(enabled=False):
               loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-              loss_vc = F.l1_loss(y_mel, vc_spec_r_mel) * hps.train.c_mel
+              loss_vc = F.l1_loss(y_mel, vc_o_r_hat_mel) * hps.train.c_mel
               loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
           scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] + loss_mel
