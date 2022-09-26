@@ -188,10 +188,9 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
   net_d.train()
 
   spec_segment_size = hps.train.segment_size // hps.data.hop_length
-  source_id = hps.others.source_id
-  target_id = hps.others.target_id
-  if type(target_id) == list:
-    target_id = target_id[0] # target_id複数の場合は最初のもの決め打ち
+  target_ids = hps.others.target_id
+  if type(target_ids) != list:
+    target_ids = [target_ids]
 
   for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(tqdm(train_loader, desc="Epoch {}".format(epoch))):
     x, x_lengths = x.cuda(rank, non_blocking=True), x_lengths.cuda(rank, non_blocking=True)
@@ -209,7 +208,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         spec = mel
     with autocast(enabled=hps.train.fp16_run):
       y_hat, attn, ids_slice, x_mask, z_mask,\
-      (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat = net_g(x, x_lengths, spec, spec_lengths, speakers)
+      (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat = net_g(x, x_lengths, spec, spec_lengths, speakers, target_ids)
       mel = spec_to_mel_torch(
           spec, 
           hps.data.filter_length, 
@@ -336,8 +335,9 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
     spec_segment_size = hps.train.segment_size // hps.data.hop_length
     source_id = hps.others.source_id
     target_id = hps.others.target_id
-    if type(target_id) == list:
-      target_id = target_id[0] # target_id複数の場合は最初のもの決め打ち
+    target_ids = hps.others.target_id
+    if type(target_ids) != list:
+      target_ids = [target_ids]
 
     scalar_dict = {}
     scalar_dict.update({"loss/g/mel": 0.0, "loss/g/vc": 0.0, "loss/g/kl": 0.0})
@@ -365,7 +365,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
           with autocast(enabled=hps.train.fp16_run):
             #Generator
             y_hat, attn, ids_slice, x_mask, z_mask,\
-            (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat = generator(x, x_lengths, spec, spec_lengths, speakers)
+            (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat = generator(x, x_lengths, spec, spec_lengths, speakers, target_ids)
 
             mel = spec_to_mel_torch(
                 spec, 

@@ -423,8 +423,7 @@ class SynthesizerTrn(nn.Module):
     filter_length=512, 
     hop_length=128, 
     win_length=512,
-    sid_src=107,
-    sid_tgt=108,
+    target_ids=[101, 102],
     **kwargs):
 
     super().__init__()
@@ -450,8 +449,7 @@ class SynthesizerTrn(nn.Module):
     self.filter_length = filter_length 
     self.hop_length = hop_length 
     self.win_length = win_length
-    self.sid_src = sid_src
-    self.sid_tgt = sid_tgt
+    self.target_ids = target_ids
 
     self.enc_p = TextEncoder(n_vocab,
         inter_channels,
@@ -499,25 +497,27 @@ class SynthesizerTrn(nn.Module):
     o = self.dec(z_slice, g=g)
 
     # VC cycle
-    sid_src = torch.full_like(sid, fill_value=self.sid_src)
-    sid_tgt = torch.full_like(sid, fill_value=self.sid_tgt)
-    g_src = self.emb_g(sid_src).unsqueeze(-1)
-    g_tgt = self.emb_g(sid_tgt).unsqueeze(-1)
+    target_sids = torch.full_like(sid, fill_value=self.target_ids[0]) # target_sidsはtarget_idsをランダムで埋めたい
+    # target_ids には、指定した target_id か、学習で使われる sid のリストかどちらかが入ってる
+    # target_ids から sid を削除
+    # target_ids からランダムで id を選択して埋める
+    # それをbatch数分作る
+    target_g = self.emb_g(target_sids).unsqueeze(-1)
     vc_spec = commons.slice_segments(y, ids_slice, self.segment_size)
     vc_spec_length = torch.full_like(ids_slice, fill_value=self.segment_size)
-    vc_z, vc_m_q, vc_logs_q, vc_y_mask = self.enc_q(vc_spec, vc_spec_length, g=g_src)
-    vc_z_p = self.flow(vc_z, vc_y_mask, g=g_src)
-    vc_z_hat = self.flow(vc_z_p, vc_y_mask, g=g_tgt, reverse=True)
-    vc_o_hat = self.dec(vc_z_hat * vc_y_mask, g=g_tgt)
+    vc_z, vc_m_q, vc_logs_q, vc_y_mask = self.enc_q(vc_spec, vc_spec_length, g=g)
+    vc_z_p = self.flow(vc_z, vc_y_mask, g=g)
+    vc_z_hat = self.flow(vc_z_p, vc_y_mask, g=target_g, reverse=True)
+    vc_o_hat = self.dec(vc_z_hat * vc_y_mask, g=target_g)
     with torch.no_grad():
       vc_spec_r = spectrogram_torch(vc_o_hat.squeeze(1), self.filter_length,
                   self.sampling_rate, self.hop_length, self.win_length,
                   center=False)
       vc_spec_r_hat = torch.squeeze(vc_spec_r, 0)
-      vc_z_r, vc_mr_q, vc_logsr_q, vc_y_r_mask = self.enc_q(vc_spec_r_hat, vc_spec_length, g=g_tgt)
-      vc_z_r_p = self.flow(vc_z_r, vc_y_r_mask, g=g_tgt)
-      vc_z_r_hat = self.flow(vc_z_r_p, vc_y_r_mask, g=g_src, reverse=True)
-      vc_o_r_hat = self.dec(vc_z_r_hat * vc_y_r_mask, g=g_src)
+      vc_z_r, vc_mr_q, vc_logsr_q, vc_y_r_mask = self.enc_q(vc_spec_r_hat, vc_spec_length, g=target_g)
+      vc_z_r_p = self.flow(vc_z_r, vc_y_r_mask, g=target_g)
+      vc_z_r_hat = self.flow(vc_z_r_p, vc_y_r_mask, g=g, reverse=True)
+      vc_o_r_hat = self.dec(vc_z_r_hat * vc_y_r_mask, g=g)
 
     return o, attn, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat
 
