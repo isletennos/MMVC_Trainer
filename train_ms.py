@@ -19,7 +19,6 @@ import datetime
 import pytz
 import time
 from tqdm import tqdm
-import numpy as np
 
 
 import commons
@@ -188,9 +187,10 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
   net_d.train()
 
   spec_segment_size = hps.train.segment_size // hps.data.hop_length
-  target_ids = hps.others.target_id
-  if type(target_ids) != list:
-    target_ids = [target_ids]
+  if type(hps.others.target_id) != list:
+    target_ids = torch.tensor([hps.others.target_id])
+  else:
+    target_ids = torch.tensor(hps.others.target_id)
 
   for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(tqdm(train_loader, desc="Epoch {}".format(epoch))):
     x, x_lengths = x.cuda(rank, non_blocking=True), x_lengths.cuda(rank, non_blocking=True)
@@ -256,7 +256,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
       y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
       with autocast(enabled=False):
         loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-        loss_vc = F.l1_loss(y_mel, vc_o_r_hat_mel) * hps.train.c_mel
+        loss_vc = F.l1_loss(y_mel, vc_o_r_hat_mel) * hps.train.c_mel # melをどっちも真ん中の半分だけ使うようにする
         loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
         loss_fm = feature_loss(fmap_r, fmap_g)

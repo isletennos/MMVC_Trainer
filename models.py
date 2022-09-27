@@ -423,7 +423,6 @@ class SynthesizerTrn(nn.Module):
     filter_length=512, 
     hop_length=128, 
     win_length=512,
-    target_ids=[101, 102],
     **kwargs):
 
     super().__init__()
@@ -449,7 +448,6 @@ class SynthesizerTrn(nn.Module):
     self.filter_length = filter_length 
     self.hop_length = hop_length 
     self.win_length = win_length
-    self.target_ids = target_ids
 
     self.enc_p = TextEncoder(n_vocab,
         inter_channels,
@@ -466,7 +464,7 @@ class SynthesizerTrn(nn.Module):
     if n_speakers > 1:
       self.emb_g = nn.Embedding(n_speakers, gin_channels)
 
-  def forward(self, x, x_lengths, y, y_lengths, sid=None):
+  def forward(self, x, x_lengths, y, y_lengths, sid=None, target_ids=None):
 
     x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
     if self.n_speakers > 0:
@@ -497,11 +495,7 @@ class SynthesizerTrn(nn.Module):
     o = self.dec(z_slice, g=g)
 
     # VC cycle
-    target_sids = torch.full_like(sid, fill_value=self.target_ids[0]) # target_sidsはtarget_idsをランダムで埋めたい
-    # target_ids には、指定した target_id か、学習で使われる sid のリストかどちらかが入ってる
-    # target_ids から sid を削除
-    # target_ids からランダムで id を選択して埋める
-    # それをbatch数分作る
+    target_sids = self.make_random_target_sids(target_ids, sid)
     target_g = self.emb_g(target_sids).unsqueeze(-1)
     vc_spec = commons.slice_segments(y, ids_slice, self.segment_size)
     vc_spec_length = torch.full_like(ids_slice, fill_value=self.segment_size)
@@ -520,6 +514,19 @@ class SynthesizerTrn(nn.Module):
       vc_o_r_hat = self.dec(vc_z_r_hat * vc_y_r_mask, g=g)
 
     return o, attn, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat
+
+  def make_random_target_sids(self, target_ids, sid):
+    # target_sids は target_ids をランダムで埋める
+    target_sids = torch.zeros_like(sid)
+    for i in range(len(target_sids)):
+      source_id = sid[i]
+      deleted_target_ids = target_ids[target_ids != source_id] # source_id と target_id が同じにならないよう sid と同じものを削除
+      if len(deleted_target_ids) >= 1:
+        target_sids[i] = deleted_target_ids[torch.randint(len(deleted_target_ids), (1,))]
+      else:
+        # target_id 候補が無いときは仕方ないので sid を使う
+        target_sids[i] = source_id
+    return target_sids
 
   def voice_conversion(self, y, y_lengths, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
