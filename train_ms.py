@@ -307,11 +307,10 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
  
 def evaluate(hps, generator, eval_loader, writer_eval, logger):
     spec_segment_size = hps.train.segment_size // hps.data.hop_length
-    source_id = hps.others.source_id
-    target_id = hps.others.target_id
-    target_ids = hps.others.target_id
-    if type(target_ids) != list:
-      target_ids = [target_ids]
+    if type(hps.others.target_id) != list:
+      target_ids = torch.tensor([hps.others.target_id])
+    else:
+      target_ids = torch.tensor(hps.others.target_id)
 
     scalar_dict = {}
     scalar_dict.update({"loss/g/mel": 0.0, "loss/g/vc": 0.0, "loss/g/kl": 0.0})
