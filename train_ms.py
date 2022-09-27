@@ -256,7 +256,10 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
       y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
       with autocast(enabled=False):
         loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-        loss_vc = F.l1_loss(y_mel, vc_o_r_hat_mel) * hps.train.c_mel # melをどっちも真ん中の半分だけ使うようにする
+        dispose_length = y_mel.size(2) // 4
+        disposed_y_mel = y_mel[:, :, dispose_length:-dispose_length]
+        disposed_vc_o_r_hat_mel = vc_o_r_hat_mel[:, :, dispose_length:-dispose_length]
+        loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel * 2.0 # melを真ん中の半分だけ使うようにする
         loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
         loss_fm = feature_loss(fmap_r, fmap_g)
@@ -401,7 +404,10 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
           with autocast(enabled=hps.train.fp16_run):
             with autocast(enabled=False):
               loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-              loss_vc = F.l1_loss(y_mel, vc_o_r_hat_mel) * hps.train.c_mel
+              dispose_length = y_mel.size(2) // 4
+              disposed_y_mel = y_mel[:, :, dispose_length:-dispose_length]
+              disposed_vc_o_r_hat_mel = vc_o_r_hat_mel[:, :, dispose_length:-dispose_length]
+              loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel * 2.0 # melを真ん中の半分だけ使うようにする
               loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
           scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] + loss_mel
