@@ -38,7 +38,7 @@ from losses import (
   feature_loss,
   kl_loss
 )
-from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
+from mel_processing import mel_spectrogram_torch_data, spec_to_mel_torch_data
 from text.symbols import symbols
 
 #stftの警告対策
@@ -125,6 +125,7 @@ def run(rank, n_gpus, hps):
       channels,
       hps.train.segment_size // hps.data.hop_length,
       n_speakers=hps.data.n_speakers,
+      hps_data=hps.data,
       **hps.model).cuda(rank)
   net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm).cuda(rank)
   optim_g = torch.optim.AdamW(
@@ -197,47 +198,17 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     spec, spec_lengths = spec.cuda(rank, non_blocking=True), spec_lengths.cuda(rank, non_blocking=True)
     y, y_lengths = y.cuda(rank, non_blocking=True), y_lengths.cuda(rank, non_blocking=True)
     speakers = speakers.cuda(rank, non_blocking=True)
-    mel = spec_to_mel_torch(
-        spec, 
-        hps.data.filter_length, 
-        hps.data.n_mel_channels, 
-        hps.data.sampling_rate,
-        hps.data.mel_fmin, 
-        hps.data.mel_fmax)
+    mel = spec_to_mel_torch_data(spec, hps.data)
     if hps.model.use_mel_train:
         spec = mel
     with autocast(enabled=hps.train.fp16_run):
       y_hat, attn, ids_slice, x_mask, z_mask,\
       (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat = net_g(x, x_lengths, spec, spec_lengths, speakers, target_ids)
-      mel = spec_to_mel_torch(
-          spec, 
-          hps.data.filter_length, 
-          hps.data.n_mel_channels, 
-          hps.data.sampling_rate,
-          hps.data.mel_fmin, 
-          hps.data.mel_fmax)
+      mel = spec_to_mel_torch_data(spec, hps.data)
       y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
     y_hat = y_hat.float()
-    y_hat_mel = mel_spectrogram_torch(
-        y_hat.squeeze(1), 
-        hps.data.filter_length, 
-        hps.data.n_mel_channels, 
-        hps.data.sampling_rate, 
-        hps.data.hop_length, 
-        hps.data.win_length, 
-        hps.data.mel_fmin, 
-        hps.data.mel_fmax
-    )
-    vc_o_r_hat_mel = mel_spectrogram_torch(
-        vc_o_r_hat.float().squeeze(1), 
-        hps.data.filter_length, 
-        hps.data.n_mel_channels, 
-        hps.data.sampling_rate, 
-        hps.data.hop_length, 
-        hps.data.win_length, 
-        hps.data.mel_fmin, 
-        hps.data.mel_fmax
-    )
+    y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
+    vc_o_r_hat_mel = mel_spectrogram_torch_data(vc_o_r_hat.float().squeeze(1), hps.data)
 
     # Discriminator
     y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
@@ -355,13 +326,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
           spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
           y, y_lengths = y.cuda(0), y_lengths.cuda(0)
           speakers = speakers.cuda(0)
-          mel = spec_to_mel_torch(
-              spec, 
-              hps.data.filter_length, 
-              hps.data.n_mel_channels, 
-              hps.data.sampling_rate,
-              hps.data.mel_fmin, 
-              hps.data.mel_fmax)
+          mel = spec_to_mel_torch_data(spec, hps.data)
           if hps.model.use_mel_train:
               spec = mel
           #autocastはfp16のおまじない
@@ -370,35 +335,11 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
             y_hat, attn, ids_slice, x_mask, z_mask,\
             (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat = generator(x, x_lengths, spec, spec_lengths, speakers, target_ids)
 
-            mel = spec_to_mel_torch(
-                spec, 
-                hps.data.filter_length, 
-                hps.data.n_mel_channels, 
-                hps.data.sampling_rate,
-                hps.data.mel_fmin, 
-                hps.data.mel_fmax)
+            mel = spec_to_mel_torch_data(spec, hps.data)
             y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
             y_hat = y_hat.float()
-            y_hat_mel = mel_spectrogram_torch(
-                y_hat.squeeze(1), 
-                hps.data.filter_length, 
-                hps.data.n_mel_channels, 
-                hps.data.sampling_rate, 
-                hps.data.hop_length, 
-                hps.data.win_length, 
-                hps.data.mel_fmin, 
-                hps.data.mel_fmax
-            )
-            vc_o_r_hat_mel = mel_spectrogram_torch(
-                vc_o_r_hat.float().squeeze(1), 
-                hps.data.filter_length, 
-                hps.data.n_mel_channels, 
-                hps.data.sampling_rate, 
-                hps.data.hop_length, 
-                hps.data.win_length, 
-                hps.data.mel_fmin, 
-                hps.data.mel_fmax
-            )
+            y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
+            vc_o_r_hat_mel = mel_spectrogram_torch_data(vc_o_r_hat.float().squeeze(1), hps.data)
           batch_num = batch_idx
 
           with autocast(enabled=hps.train.fp16_run):

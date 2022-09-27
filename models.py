@@ -14,7 +14,7 @@ from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from commons import init_weights, get_padding
 
 from text import cleaned_text_to_sequence
-from mel_processing import spectrogram_torch
+from mel_processing import spectrogram_torch_data
 
 '''
 class StochasticDurationPredictor(nn.Module):
@@ -419,10 +419,7 @@ class SynthesizerTrn(nn.Module):
     n_speakers=0,
     gin_channels=0,
     use_sdp=True,
-    sampling_rate=24000,
-    filter_length=512, 
-    hop_length=128, 
-    win_length=512,
+    hps_data=None,
     **kwargs):
 
     super().__init__()
@@ -444,10 +441,7 @@ class SynthesizerTrn(nn.Module):
     self.n_speakers = n_speakers
     self.gin_channels = gin_channels
     self.use_sdp = use_sdp
-    self.sampling_rate = sampling_rate
-    self.filter_length = filter_length 
-    self.hop_length = hop_length 
-    self.win_length = win_length
+    self.hps_data = hps_data
 
     self.enc_p = TextEncoder(n_vocab,
         inter_channels,
@@ -504,9 +498,7 @@ class SynthesizerTrn(nn.Module):
     vc_z_hat = self.flow(vc_z_p, vc_y_mask, g=target_g, reverse=True)
     vc_o_hat = self.dec(vc_z_hat * vc_y_mask, g=target_g)
     with torch.no_grad():
-      vc_spec_r = spectrogram_torch(vc_o_hat.squeeze(1), self.filter_length,
-                  self.sampling_rate, self.hop_length, self.win_length,
-                  center=False)
+      vc_spec_r = spectrogram_torch_data(vc_o_hat.squeeze(1), self.hps_data)
       vc_spec_r_hat = torch.squeeze(vc_spec_r, 0)
       vc_z_r, vc_mr_q, vc_logsr_q, vc_y_r_mask = self.enc_q(vc_spec_r_hat, vc_spec_length, g=target_g)
       vc_z_r_p = self.flow(vc_z_r, vc_y_r_mask, g=target_g)

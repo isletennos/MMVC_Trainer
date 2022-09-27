@@ -112,3 +112,12 @@ def mel_spectrogram_torch(y, n_fft, num_mels, sampling_rate, hop_size, win_size,
     spec = spectral_normalize_torch(spec)
 
     return spec
+
+def spectrogram_torch_data(y, data):
+    return spectrogram_torch(y, data.filter_length, data.sampling_rate, data.hop_length, data.win_length, center=False)
+
+def spec_to_mel_torch_data(spec, data):
+    return spec_to_mel_torch(spec, data.filter_length, data.n_mel_channels, data.sampling_rate, data.mel_fmin, data.mel_fmax)
+
+def mel_spectrogram_torch_data(y, data):
+    return mel_spectrogram_torch(y, data.filter_length, data.n_mel_channels, data.sampling_rate, data.hop_length, data.win_length, data.mel_fmin, data.mel_fmax, center=False)
