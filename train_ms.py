@@ -230,7 +230,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         dispose_length = y_mel.size(2) // 4
         disposed_y_mel = y_mel[:, :, dispose_length:-dispose_length]
         disposed_vc_o_r_hat_mel = vc_o_r_hat_mel[:, :, dispose_length:-dispose_length]
-        loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel * 2.0 # melを真ん中の半分だけ使うようにする
+        loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel # melを真ん中の半分だけ使うようにする
         loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
         loss_fm = feature_loss(fmap_r, fmap_g)
@@ -347,7 +347,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
               dispose_length = y_mel.size(2) // 4
               disposed_y_mel = y_mel[:, :, dispose_length:-dispose_length]
               disposed_vc_o_r_hat_mel = vc_o_r_hat_mel[:, :, dispose_length:-dispose_length]
-              loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel * 2.0 # melを真ん中の半分だけ使うようにする
+              loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel # melを真ん中の半分だけ使うようにする
               loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
           scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] + loss_mel
