@@ -188,10 +188,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
   net_d.train()
 
   spec_segment_size = hps.train.segment_size // hps.data.hop_length
-  if type(hps.others.target_id) != list:
-    target_ids = torch.tensor([hps.others.target_id])
-  else:
-    target_ids = torch.tensor(hps.others.target_id)
+  target_ids = torch.tensor(train_loader.dataset.get_all_sid())
 
   for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(tqdm(train_loader, desc="Epoch {}".format(epoch))):
     x, x_lengths = x.cuda(rank, non_blocking=True), x_lengths.cuda(rank, non_blocking=True)
