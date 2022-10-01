@@ -308,20 +308,18 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
 
     scalar_dict = {}
     scalar_dict.update({"loss/g/mel": 0.0, "loss/g/vc": 0.0, "loss/g/kl": 0.0})
-    for i in tqdm(range(hps.train.backup.mean_of_num_eval), desc="Try {} of ".format("eval")):
-      temp_gmel = 0.0
-      temp_gvc = 0.0
-      temp_gkl = 0.0
-      with torch.no_grad():
-        #evalのデータセットを一周する
-        for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(eval_loader):
-          x, x_lengths = x.cuda(0), x_lengths.cuda(0)
-          spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
-          y, y_lengths = y.cuda(0), y_lengths.cuda(0)
-          speakers = speakers.cuda(0)
-          mel = spec_to_mel_torch_data(spec, hps.data)
-          if hps.model.use_mel_train:
-              spec = mel
+
+    with torch.no_grad():
+      #evalのデータセットを一周する
+      for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(eval_loader):
+        x, x_lengths = x.cuda(0), x_lengths.cuda(0)
+        spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
+        y, y_lengths = y.cuda(0), y_lengths.cuda(0)
+        speakers = speakers.cuda(0)
+        mel = spec_to_mel_torch_data(spec, hps.data)
+        if hps.model.use_mel_train:
+            spec = mel
+        for i in range(hps.train.backup.mean_of_num_eval):
           #autocastはfp16のおまじない
           with autocast(enabled=hps.train.fp16_run):
             #Generator
@@ -347,20 +345,13 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
           scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] + loss_mel
           scalar_dict["loss/g/vc"] = scalar_dict["loss/g/vc"] + loss_vc
           scalar_dict["loss/g/kl"] = scalar_dict["loss/g/kl"] + loss_kl
-          temp_gmel = temp_gmel + loss_mel
-          temp_gvc = temp_gvc + loss_vc
-          temp_gkl = temp_gkl + loss_kl
-
-        temp_gmel = temp_gmel / (batch_num+1)
-        temp_gvc = temp_gvc / (batch_num+1)
-        temp_gkl = temp_gkl / (batch_num+1)
-        print("loss/g/mel : {} loss/g/vc : {} loss/g/kl : {}".format(str(temp_gmel), str(temp_gvc), str(temp_gkl)))
+          #print(f"loss/g/mel : {loss_mel} loss/g/vc : {loss_vc} loss/g/kl : {loss_kl}")
       
     #lossをepoch1周の結果をiter単位の平均値に
     scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] / ((batch_num+1) * hps.train.backup.mean_of_num_eval)
     scalar_dict["loss/g/vc"] = scalar_dict["loss/g/vc"] / ((batch_num+1) * hps.train.backup.mean_of_num_eval)
     scalar_dict["loss/g/kl"] = scalar_dict["loss/g/kl"] / ((batch_num+1) * hps.train.backup.mean_of_num_eval)
-    logger.info("loss/g/mel : {} loss/g/vc : {} loss/g/kl : {}".format(str(scalar_dict["loss/g/mel"]), str(scalar_dict["loss/g/vc"]), str(scalar_dict["loss/g/kl"])))
+    logger.info(f"loss/g/mel : {scalar_dict['loss/g/mel']} loss/g/vc : {scalar_dict['loss/g/vc']} loss/g/kl : {scalar_dict['loss/g/kl']}")
 
     utils.summarize(
       writer=writer_eval,
