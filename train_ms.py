@@ -201,8 +201,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     with autocast(enabled=hps.train.fp16_run):
       y_hat, attn, ids_slice, x_mask, z_mask,\
       (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat = net_g(x, x_lengths, spec, spec_lengths, speakers, target_ids)
-      mel = spec_to_mel_torch_data(spec, hps.data)
-      y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
+    y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
     y_hat = y_hat.float()
     y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
     vc_o_r_hat_mel = mel_spectrogram_torch_data(vc_o_r_hat.float().squeeze(1), hps.data)
@@ -324,8 +323,6 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
             #Generator
             y_hat, attn, ids_slice, x_mask, z_mask,\
             (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat = generator(x, x_lengths, spec, spec_lengths, speakers, target_ids)
-
-          mel = spec_to_mel_torch_data(spec, hps.data)
           y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
           y_hat = y_hat.float()
           y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
