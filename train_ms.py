@@ -311,7 +311,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
 
     with torch.no_grad():
       #evalのデータセットを一周する
-      for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(eval_loader):
+      for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(tqdm(eval_loader, desc="Epoch {}".format("eval"))):
         x, x_lengths = x.cuda(0), x_lengths.cuda(0)
         spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
         y, y_lengths = y.cuda(0), y_lengths.cuda(0)
@@ -320,37 +320,35 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
         if hps.model.use_mel_train:
             spec = mel
         for i in range(hps.train.backup.mean_of_num_eval):
-          #autocastはfp16のおまじない
           with autocast(enabled=hps.train.fp16_run):
             #Generator
             y_hat, attn, ids_slice, x_mask, z_mask,\
             (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat = generator(x, x_lengths, spec, spec_lengths, speakers, target_ids)
 
-            mel = spec_to_mel_torch_data(spec, hps.data)
-            y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
-            y_hat = y_hat.float()
-            y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
-            vc_o_r_hat_mel = mel_spectrogram_torch_data(vc_o_r_hat.float().squeeze(1), hps.data)
+          mel = spec_to_mel_torch_data(spec, hps.data)
+          y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
+          y_hat = y_hat.float()
+          y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
+          vc_o_r_hat_mel = mel_spectrogram_torch_data(vc_o_r_hat.float().squeeze(1), hps.data)
           batch_num = batch_idx
 
-          with autocast(enabled=hps.train.fp16_run):
-            with autocast(enabled=False):
-              loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-              dispose_length = y_mel.size(2) // 4
-              disposed_y_mel = y_mel[:, :, dispose_length:-dispose_length]
-              disposed_vc_o_r_hat_mel = vc_o_r_hat_mel[:, :, dispose_length:-dispose_length]
-              loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel # melを真ん中の半分だけ使うようにする
-              loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
+          loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
+          dispose_length = y_mel.size(2) // 4 # loss_vcは精度を上げるためmelを真ん中の半分だけ使う
+          disposed_y_mel = y_mel[:, :, dispose_length:-dispose_length]
+          disposed_vc_o_r_hat_mel = vc_o_r_hat_mel[:, :, dispose_length:-dispose_length]
+          loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel
+          loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
 
-          scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] + loss_mel
-          scalar_dict["loss/g/vc"] = scalar_dict["loss/g/vc"] + loss_vc
-          scalar_dict["loss/g/kl"] = scalar_dict["loss/g/kl"] + loss_kl
+          scalar_dict["loss/g/mel"] += loss_mel
+          scalar_dict["loss/g/vc"] += loss_vc
+          scalar_dict["loss/g/kl"] += loss_kl
           #print(f"loss/g/mel : {loss_mel} loss/g/vc : {loss_vc} loss/g/kl : {loss_kl}")
       
     #lossをepoch1周の結果をiter単位の平均値に
-    scalar_dict["loss/g/mel"] = scalar_dict["loss/g/mel"] / ((batch_num+1) * hps.train.backup.mean_of_num_eval)
-    scalar_dict["loss/g/vc"] = scalar_dict["loss/g/vc"] / ((batch_num+1) * hps.train.backup.mean_of_num_eval)
-    scalar_dict["loss/g/kl"] = scalar_dict["loss/g/kl"] / ((batch_num+1) * hps.train.backup.mean_of_num_eval)
+    iter_num = (batch_num+1) * hps.train.backup.mean_of_num_eval
+    scalar_dict["loss/g/mel"] /= iter_num
+    scalar_dict["loss/g/vc"] /= iter_num
+    scalar_dict["loss/g/kl"] /= iter_num
     logger.info(f"loss/g/mel : {scalar_dict['loss/g/mel']} loss/g/vc : {scalar_dict['loss/g/vc']} loss/g/kl : {scalar_dict['loss/g/kl']}")
 
     utils.summarize(
