@@ -152,8 +152,8 @@ def run(rank, n_gpus, hps):
 
   else:
     try:
-      _, _, _, global_step = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g)
-      _, _, _, global_step = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "D_*.pth"), net_d, optim_d)
+      _, _, _, global_step = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "G_*[0-9].pth"), net_g, optim_g)
+      _, _, _, global_step = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "D_*[0-9].pth"), net_d, optim_d)
       epoch_str = global_step // len(train_loader) + 1
     except:
       epoch_str = 1
