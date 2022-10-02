@@ -32,9 +32,9 @@ https://www.nicovideo.jp/watch/sm40386035 (v1.2.0.0)
 MMVCの利用規約とは別に、下記音声データを利用する場合、それぞれの音声ライブラリ提供者様の利用規約に同意する必要があります。  
 ※本ソフトウェアでは下記企業様・団体様に特別に許可を頂き、音声データを本ソフトウェア用に改変、再配布を行っております。  
 #### SSS LLC.
-[[利用規約](https://zunko.jp/guideline.html)][[ずんだもん 音声データ](https://drive.google.com/file/d/1ria8bRkzrneRYJXhfRQxTA_-ntlFJxUj/view?usp=sharing)]　※本ソフトウェアに同梱しているものと同様の音声データになります  
-[[利用規約](https://zunko.jp/guideline.html)][[九州そら 音声データ](https://drive.google.com/file/d/1QpdrBrnRkTGZfNzL811yCe1L4OYVHDN0/view?usp=sharing)]  
-[[利用規約](https://zunko.jp/guideline.html)][[四国めたん 音声データ](https://drive.google.com/file/d/1nduC-Ym8aS_rtk_IqAgPBw7Dw6yb_0j7/view?usp=sharing)]  
+[[利用規約](https://zunko.jp/guideline.html)][[ずんだもん 音声データ](https://drive.google.com/file/d/1h8Ajyvoig7Hl3LSSt2vYX0sUHX3JDF3R/view?usp=sharing)]　※本ソフトウェアに同梱しているものと同様の音声データになります  
+[[利用規約](https://zunko.jp/guideline.html)][[九州そら 音声データ](https://drive.google.com/file/d/1MXfMRG_sjbsaLihm7wEASG2PwuCponZF/view?usp=sharing)]  
+[[利用規約](https://zunko.jp/guideline.html)][[四国めたん 音声データ](https://drive.google.com/file/d/1iCrpzhqXm-0YdktOPM8M1pMtgQIDF3r4/view?usp=sharing)]  
 #### 春日部つむぎプロジェクト様
 [[利用規約](https://tsumugi-official.studio.site/rule)][[春日部つむぎ 音声データ](https://drive.google.com/file/d/14zE0F_5ZCQWXf6m6SUPF5Y3gpL6yb7zk/view?usp=sharing)]  
 
@@ -67,7 +67,8 @@ community(discord):https://discord.gg/PgspuDSTEc
 ## Requirement
 ・Google アカウント
 ## Install
-このリポジトリをダウンロードして、展開、展開したディレクトリをgoogle drive上にアップロードしてください。
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/isletennos/MMVC_Trainer/blob/main/notebook/00_Clone_Repo.ipynb)    
+上のリンクからGoogle Colaboratoryを開いて、中のセルを実行してください。
 ## Usage
 ### チュートリアル : ずんだもんになる
 本チュートリアルではずんだもん(SSS LLC.)の音声データを利用します。  
@@ -79,12 +80,12 @@ JVSコーパスやITAコーパス等を台本にし、100文程度読み上げ�
 ※MMVC用にテキストを分割したITAコーパスです。ご利用ください。  
 https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing  
 
-2. dataset/textful/000_myvoice に音声データとテキストデータを配置します。 
+2. dataset/textful/00_myvoice に音声データとテキストデータを配置します。 
 最終的に下記のようなディレクトリ構成になります。  
 ```
 dataset
 ├── textful
-│   ├── 000_myvoice
+│   ├── 00_myvoice
 │   │   ├── text
 │   │   │   ├── s_voice_001.txt
 │   │   │   ├── s_voice_002.txt
@@ -93,7 +94,7 @@ dataset
 │   │        ├── s_voice_001.wav
 │   │        ├── s_voice_002.wav
 │   │        ├── ...
-│   │── 001_target
+│   │── 01_target
 │   │   ├── text
 │   │   └── wav
 │   │
@@ -111,11 +112,8 @@ dataset
 ```
 
 #### Ph2. モデルの学習方法
-1. 下記リンクより、「G_180000.pth」「D_180000.pth」をダウンロード。 
-https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sharing
-2. 「G_180000.pth」「D_180000.pth」をfine_modelに配置します。**(良く忘れるポイントなので要注意！)**  
-3. notebookディレクトリにある「Create_Configfile_zundamon.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成します  
-4. configsに作成されたtrain_config_zundamon.jsonの  
+1. notebookディレクトリにある「01_Create_Configfile.ipynb」をgoogle colab 上で実行、学習に必要なconfigファイルを作成します  
+2. configsに作成されたtrain_config_zundamon.jsonの  
  
       - "eval_interval"   
         modelを保存する間隔です。
@@ -124,11 +122,11 @@ https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sha
 
     上記2項目を環境に応じて最適化してください。わからない方はそのままで大丈夫です。  
 
-5. notebookディレクトリにある「Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
+3. notebookディレクトリにある「02_Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
     logs/にモデルが生成されます。
 
 #### Ph3. 学習したモデルの性能検証
-1. notebookディレクトリにある「MMVC_Interface.ipynb」をgoogle colab 上で実行してください。
+1. notebookディレクトリにある「03_MMVC_Interface.ipynb」をgoogle colab 上で実行してください。
 ### 好きなキャラクターの声になる
 #### Ph1. 自分の音声の録音と音声データの配置 及びターゲット音声データの配置
 1. 自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。    
@@ -140,7 +138,7 @@ https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sha
 ```
 dataset
 ├── textful
-│   ├── 000_myvoice
+│   ├── 00_myvoice
 │   │   ├── text
 │   │   │   ├── s_voice_001.txt
 │   │   │   ├── s_voice_002.txt
@@ -149,7 +147,7 @@ dataset
 │   │        ├── s_voice_001.wav
 │   │        ├── s_voice_002.wav
 │   │        ├── ...
-│   │── 001_target
+│   │── 01_target
 │   │   ├── text
 │   │   │   ├── t_voice_001.txt
 │   │   │   ├── t_voice_002.txt
