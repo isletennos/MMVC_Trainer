@@ -345,7 +345,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
           #print(f"loss/g/mel : {loss_mel} loss/g/vc : {loss_vc} loss/g/kl : {loss_kl}")
       
     #lossをepoch1周の結果をiter単位の平均値に
-    iter_num = (batch_num+1) * hps.train.backup.mean_of_num_eval
+    iter_num = (batch_num + 1) * hps.train.backup.mean_of_num_eval
     scalar_dict["loss/g/mel"] /= iter_num
     scalar_dict["loss/g/vc"] /= iter_num
     scalar_dict["loss/g/kl"] /= iter_num
