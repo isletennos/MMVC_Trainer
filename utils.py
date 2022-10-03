@@ -72,9 +72,9 @@ def save_vc_sample(hps, loader, collate, generator, name):
     target_ids = [target_ids]
 
   dataset = loader("", hps.data, no_use_textfile=True, disable_tqdm=True)
-  data = dataset.get_audio_text_speaker_pair([input_filename, source_id, "a"])
+  data = dataset.get_audio_text_speaker_pair([input_filename, source_id, "a", "0"])
   data = collate()([data])
-  x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src = [x.cuda(0) for x in data]
+  x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src, note, note_lengths = [x.cuda(0) for x in data]
   mel = spec_to_mel_torch_data(spec, hps.data)
   if hps.model.use_mel_train:
     spec = mel
