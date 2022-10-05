@@ -1,9 +1,13 @@
 {
   "train": {
-    "log_interval": 1000,
-    "eval_interval": 2000,
+    "eval_interval": 1000,
+    "best": true,
+    "backup": {
+      "interval": 2000,
+      "g_only": true,
+      "mean_of_num_eval": 10
+    },
     "seed": 1234,
-    "epochs": 10000,
     "learning_rate": 0.0002,
     "betas": [
       0.8,
@@ -89,7 +93,8 @@
     "use_spectral_norm": false,
     "n_flow": 12,
     "gin_channels": 256,
-    "n_note": 79
+    "n_note": 79,
+    "use_mel_train": false
   },
   "others": {
     "os_type": "linux"
