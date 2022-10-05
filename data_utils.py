@@ -334,6 +334,8 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.audiopaths_sid_text)
 
+    def get_all_sid(self):
+        return list(set([int(r[1]) for r in self.audiopaths_sid_text]))
 
 class TextAudioSpeakerCollate():
     """ Zero-pads model inputs and targets
