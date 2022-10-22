@@ -624,4 +624,15 @@ class SynthesizerTrn(nn.Module):
     o_hat = self.dec(z_hat_hat * y_mask, g=g_tgt)
     return o_hat, y_mask, (z, z_p, z_hat)
 
+  def save_synthesizer(self, checkpoint_path):
+    encoder = self.enc_q.state_dict()
+    decoder = self.dec.state_dict()
+    torch.save({'encoder': encoder, 'decoder': decoder}, checkpoint_path)
+
+  def load_synthesizer(self, checkpoint_path):
+    checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
+    encoder_dict = checkpoint_dict['encoder']
+    decoder_dict = checkpoint_dict['decoder']
+    self.enc_q.load_state_dict(encoder_dict)
+    self.dec.load_state_dict(decoder_dict)
 

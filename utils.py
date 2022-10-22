@@ -198,6 +198,8 @@ def get_hparams(init=True):
                       help='If fine tuning, please specify model(G)')
   parser.add_argument('-fd', '--fine_tuning_d', type=str, default=None,
                       help='If fine tuning, please specify model(D)')
+  parser.add_argument('-sy', '--load_synthesizer', type=str, default=None,
+                      help='load synthesizer model')
   
   args = parser.parse_args()
   model_dir = os.path.join("./logs", args.model)
@@ -238,6 +240,9 @@ def get_hparams(init=True):
   else:
     config['fine_flag'] = False
   
+  if args.load_synthesizer != None:
+    config['load_synthesizer'] = args.load_synthesizer
+
   hparams = HParams(**config)
   hparams.model_dir = model_dir
   hparams.best_log_path = best_log_path
