@@ -242,6 +242,8 @@ def get_hparams(init=True):
   
   if args.load_synthesizer != None:
     config['load_synthesizer'] = args.load_synthesizer
+  else:
+    config['load_synthesizer'] = None
 
   hparams = HParams(**config)
   hparams.model_dir = model_dir
