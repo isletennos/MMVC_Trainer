@@ -161,7 +161,7 @@ def run(rank, n_gpus, hps):
 
   if hps.load_synthesizer != None:
     logger.info(f"Load synthesizer model : {hps.load_synthesizer}")
-    net_g.module.load_synthesizer(os.path.join(hps.model_dir, hps.load_synthesizer))
+    net_g.module.load_synthesizer(os.path.join(hps.load_synthesizer))
   #net_g.module.save_synthesizer(os.path.join(hps.model_dir, "synthesizer.pth"))
   for epoch in range(epoch_str, sys.maxsize):
     if rank==0:
