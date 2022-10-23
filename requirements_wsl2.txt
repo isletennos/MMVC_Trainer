@@ -5,6 +5,7 @@ matplotlib==3.3.1
 phonemizer==2.2.1
 scipy==1.5.2
 tensorboard==2.3.0
+setuptools==59.5.0
 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 torch==1.10.2+cu113
 torchvision==0.11.3+cu113
@@ -17,4 +18,4 @@ resampy==0.2.2
 # Specific package for WSL2
 psutil
 protobuf==3.19.0
-numpy==1.22
+numpy==1.23.4
