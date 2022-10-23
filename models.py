@@ -266,7 +266,8 @@ class PosteriorEncoder(nn.Module):
       kernel_size,
       dilation_rate,
       n_layers,
-      gin_channels=0):
+      gin_channels=0,
+      requires_grad=True):
     super().__init__()
     self.in_channels = in_channels
     self.out_channels = out_channels
@@ -280,6 +281,11 @@ class PosteriorEncoder(nn.Module):
     self.enc = modules.WN(hidden_channels, kernel_size, dilation_rate, n_layers, gin_channels=gin_channels)
     self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
+    if requires_grad == False:
+      for param in self.parameters():
+        param.requires_grad = False
+
+
   def forward(self, x, x_lengths, g=None):
     x_mask = torch.unsqueeze(commons.sequence_mask(x_lengths, x.size(2)), 1).to(x.dtype)
     x = self.pre(x) * x_mask
@@ -291,7 +297,7 @@ class PosteriorEncoder(nn.Module):
 
 
 class Generator(torch.nn.Module):
-    def __init__(self, initial_channel, resblock, resblock_kernel_sizes, resblock_dilation_sizes, upsample_rates, upsample_initial_channel, upsample_kernel_sizes, gin_channels=0):
+    def __init__(self, initial_channel, resblock, resblock_kernel_sizes, resblock_dilation_sizes, upsample_rates, upsample_initial_channel, upsample_kernel_sizes, gin_channels=0, requires_grad=True):
         super(Generator, self).__init__()
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
@@ -315,6 +321,11 @@ class Generator(torch.nn.Module):
 
         if gin_channels != 0:
             self.cond = nn.Conv1d(gin_channels, upsample_initial_channel, 1)
+
+        if requires_grad == False:
+          for param in self.parameters():
+            param.requires_grad = False
+
 
     def forward(self, x, g=None):
         x = self.conv_pre(x)
@@ -464,6 +475,7 @@ class SynthesizerTrn(nn.Module):
     n_note = 79,
     use_sdp=True,
     hps_data=None,
+    synthesizer_requires_grad=True,
     **kwargs):
 
     super().__init__()
@@ -487,6 +499,7 @@ class SynthesizerTrn(nn.Module):
     self.gin_channels = gin_channels
     self.use_sdp = use_sdp
     self.hps_data = hps_data
+    self.synthesizer_requires_grad = synthesizer_requires_grad
 
     self.enc_p = TextEncoder(n_vocab,
         inter_channels,
@@ -504,8 +517,8 @@ class SynthesizerTrn(nn.Module):
         n_layers,
         kernel_size,
         p_dropout)
-    self.dec = Generator(inter_channels, resblock, resblock_kernel_sizes, resblock_dilation_sizes, upsample_rates, upsample_initial_channel, upsample_kernel_sizes, gin_channels=gin_channels)
-    self.enc_q = PosteriorEncoder(spec_channels, inter_channels, hidden_channels, 5, 1, 16, gin_channels=gin_channels)
+    self.dec = Generator(inter_channels, resblock, resblock_kernel_sizes, resblock_dilation_sizes, upsample_rates, upsample_initial_channel, upsample_kernel_sizes, gin_channels=gin_channels, requires_grad=synthesizer_requires_grad)
+    self.enc_q = PosteriorEncoder(spec_channels, inter_channels, hidden_channels, 5, 1, 16, gin_channels=gin_channels, requires_grad=synthesizer_requires_grad)
     self.flow = ResidualCouplingBlock(inter_channels, hidden_channels, 5, 1, 4, n_flows=n_flow, gin_channels=gin_channels)
 
     if n_speakers > 1:
@@ -624,4 +637,18 @@ class SynthesizerTrn(nn.Module):
     o_hat = self.dec(z_hat_hat * y_mask, g=g_tgt)
     return o_hat, y_mask, (z, z_p, z_hat)
 
+  def save_synthesizer(self, path):
+    enc_q = self.enc_q.state_dict()
+    dec = self.dec.state_dict()
+    emb_g = self.emb_g.state_dict()
+    torch.save({'enc_q': enc_q,'dec': dec, 'emb_g': emb_g}, path)
+
+  def load_synthesizer(self, path):
+    dict = torch.load(path, map_location='cpu')
+    enc_q = dict['enc_q']
+    dec = dict['dec']
+    emb_g = dict['emb_g']
+    self.enc_q.load_state_dict(enc_q)
+    self.dec.load_state_dict(dec)
+    self.emb_g.load_state_dict(emb_g)
 

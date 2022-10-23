@@ -51,7 +51,7 @@ def main():
 
   n_gpus = torch.cuda.device_count()
   os.environ['MASTER_ADDR'] = 'localhost'
-  os.environ['MASTER_PORT'] = '80000'
+  os.environ['MASTER_PORT'] = '8000'
 
   hps = utils.get_hparams()
 
@@ -159,6 +159,10 @@ def run(rank, n_gpus, hps):
 
   scaler = GradScaler(enabled=hps.train.fp16_run)
 
+  if hps.load_synthesizer != None:
+    logger.info(f"Load synthesizer model : {hps.load_synthesizer}")
+    net_g.module.load_synthesizer(os.path.join(hps.load_synthesizer))
+  #net_g.module.save_synthesizer(os.path.join(hps.model_dir, "synthesizer.pth"))
   for epoch in range(epoch_str, sys.maxsize):
     if rank==0:
       train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
