@@ -113,7 +113,7 @@ def create_dataset(filename, note_list_path = "note_correspondence.csv"):
     #空白話者の先頭からスタート
     speaker_id = NUM_TRAINED_SPEAKER
     #list回りの宣言とソート
-    textful_dir_list = glob.glob("dataset/*")
+    textful_dir_list = glob.glob("dataset/**/")
     textful_dir_list.sort()
     Correspondence_list = list()
     output_file_list = list()
@@ -144,7 +144,7 @@ def create_dataset(filename, note_list_path = "note_correspondence.csv"):
 
 def create_dataset_zundamon(filename, note_list_path = "note_correspondence.csv"):
     #list回りの宣言とソート
-    textful_dir_list = glob.glob("dataset/*")
+    textful_dir_list = glob.glob("dataset/**/")
     textful_dir_list.sort()
     Correspondence_list = list()
     output_file_list = list()
@@ -196,7 +196,7 @@ def create_dataset_zundamon(filename, note_list_path = "note_correspondence.csv"
 
 def create_dataset_character(filename, tid, note_list_path = "note_correspondence.csv"):
     #list回りの宣言とソート
-    textful_dir_list = glob.glob("dataset/*")
+    textful_dir_list = glob.glob("dataset/**/")
     textful_dir_list.sort()
     Correspondence_list = list()
     output_file_list = list()
@@ -248,7 +248,7 @@ def create_dataset_character(filename, tid, note_list_path = "note_correspondenc
 
 def create_dataset_multi_character(filename, file_path, note_list_path = "note_correspondence.csv"):
     #list回りの宣言とソート
-    textful_dir_list = glob.glob("dataset/*")
+    textful_dir_list = glob.glob("dataset/**/")
     textful_dir_list.sort()
     Correspondence_list = list()
     output_file_list = list()
