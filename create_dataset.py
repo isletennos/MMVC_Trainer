@@ -121,6 +121,7 @@ def create_dataset(filename, note_list_path = "note_correspondence.csv"):
     hubert = torch.hub.load("bshall/hubert:main", "hubert_soft")
 
     for d in textful_dir_list:
+        d = d[:-1]
         wav_file_list = glob.glob(d+"/wav/*.wav")
         wav_file_list.sort()
         if len(wav_file_list) == 0:
