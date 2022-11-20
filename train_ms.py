@@ -19,7 +19,9 @@ import datetime
 import pytz
 import time
 from tqdm import tqdm
-
+import torch, torchaudio
+import librosa
+import numpy as np
 
 import commons
 import utils
@@ -79,12 +81,14 @@ def run(rank, n_gpus, hps):
   if cpu_count > 8:
     cpu_count = 8
 
+  #mel_train何だっけ…
   if not hasattr(hps.model, "use_mel_train"):
     hps.model.use_mel_train = False
 
-  if hasattr(hps.others, "input_filename"):
-    assert os.path.isfile(hps.others.input_filename), "VC test file does not exist."
-    assert hasattr(hps.others, "source_id") and hasattr(hps.others, "target_id"), "VC source_id and target_id are required."
+  #vc 出力の設定
+  if hps.others.create_vc_sample:
+    assert os.path.isfile(hps.others.vc_sample_config.input_filename), "VC test file does not exist."
+    assert hasattr(hps.others.vc_sample_config, "source_id") and hasattr(hps.others.vc_sample_config, "target_id"), "VC source_id and target_id are required."
 
   dist.init_process_group(backend=backend_type, init_method='env://', world_size=n_gpus, rank=rank)
   torch.manual_seed(hps.train.seed)
@@ -135,6 +139,8 @@ def run(rank, n_gpus, hps):
       eps=hps.train.eps)
   net_g = parallel(net_g, device_ids=[rank])
   net_d = parallel(net_d, device_ids=[rank])
+  #処理速度を取るか(CPU処理)、GPUメモリを取るか…
+  hubert = torch.hub.load("bshall/hubert:main", "hubert_soft").cuda(rank)
 
   logger.info('FineTuning : '+str(hps.fine_flag))
   if hps.fine_flag:
@@ -142,6 +148,9 @@ def run(rank, n_gpus, hps):
       logger.info('Load model : '+str(hps.fine_model_d))
       _, _, _, global_step = utils.load_checkpoint(hps.fine_model_g, net_g, optim_g)
       _, _, _, global_step = utils.load_checkpoint(hps.fine_model_d, net_d, optim_d)
+      #lr reset
+      optim_g.param_groups[0]['lr'] = hps.train.learning_rate
+      optim_d.param_groups[0]['lr'] = hps.train.learning_rate
       epoch_str = 1
       global_step = 0
 
@@ -159,21 +168,21 @@ def run(rank, n_gpus, hps):
 
   scaler = GradScaler(enabled=hps.train.fp16_run)
 
+  #model freez 回りの設定
   if hps.load_synthesizer != None:
     logger.info(f"Load synthesizer model : {hps.load_synthesizer}")
     net_g.module.load_synthesizer(os.path.join(hps.load_synthesizer))
   #net_g.module.save_synthesizer(os.path.join(hps.model_dir, "synthesizer.pth"))
   for epoch in range(epoch_str, sys.maxsize):
     if rank==0:
-      train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
+      train_and_evaluate(rank, epoch, hps, [net_g, net_d, hubert], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
     else:
-      train_and_evaluate(rank, epoch, hps, [net_g, net_d], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, None], None, None)
+      train_and_evaluate(rank, epoch, hps, [net_g, net_d, hubert], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, None], None, None)
     scheduler_g.step()
     scheduler_d.step()
 
-
 def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loaders, logger, writers):
-  net_g, net_d = nets
+  net_g, net_d, hubert = nets
   optim_g, optim_d = optims
   scheduler_g, scheduler_d = schedulers
   train_loader, eval_loader = loaders
@@ -195,17 +204,17 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     y, y_lengths = y.cuda(rank, non_blocking=True), y_lengths.cuda(rank, non_blocking=True)
     speakers = speakers.cuda(rank, non_blocking=True)
     note, note_lengths = note.cuda(rank, non_blocking=True), note_lengths.cuda(rank, non_blocking=True)
+
     mel = spec_to_mel_torch_data(spec, hps.data)
     if hps.model.use_mel_train:
         spec = mel
 
     with autocast(enabled=hps.train.fp16_run):
-      y_hat, (attn, note_attn), ids_slice, _, z_mask,\
-        (z, z_p, (m_p, note_m_p), (logs_p, note_logs_p), m_q, logs_q), vc_o_r_hat = net_g(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers, target_ids)
+      (y_hat, tgt_y_hat), ids_slice, _, z_mask,\
+        (z, z_p, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers, target_ids)
       y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
     y_hat = y_hat.float()
     y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
-    vc_o_r_hat_mel = mel_spectrogram_torch_data(vc_o_r_hat.float().squeeze(1), hps.data)
 
     # Discriminator
     y = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
@@ -219,20 +228,28 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
     scaler.step(optim_d)
 
+    #HuBERT Loss
+    tgt_y_hat = tgt_y_hat.float()
+    tgt_y_hat_16k = torchaudio.functional.resample(tgt_y_hat, 24000, 16000)
+    y_16k = torchaudio.functional.resample(y, 24000, 16000)
+    tgt_units = hubert.units(tgt_y_hat_16k)
+    units = hubert.units(y_16k)
+    #vc_o_r_hat_mel = mel_spectrogram_torch_data(tgt_y_hat.float().squeeze(1), hps.data)
+
     with autocast(enabled=hps.train.fp16_run):
       # Generator
       y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
       with autocast(enabled=False):
         loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-        dispose_length = y_mel.size(2) // 4
-        disposed_y_mel = y_mel[:, :, dispose_length:-dispose_length]
-        disposed_vc_o_r_hat_mel = vc_o_r_hat_mel[:, :, dispose_length:-dispose_length]
-        loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel # melを真ん中の半分だけ使うようにする
+        loss_hubert = F.l1_loss(units, tgt_units) * hps.train.l1_hubert
+        #dispose_length = y_mel.size(2) // 4
+        #disposed_y_mel = y_mel[:, :, dispose_length:-dispose_length]
+        #disposed_vc_o_r_hat_mel = vc_o_r_hat_mel[:, :, dispose_length:-dispose_length]
+        #loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel # melを真ん中の半分だけ使うようにする
         loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
-        loss_note_kl = kl_loss(z, logs_q, note_m_p, note_logs_p, z_mask) * hps.train.note_kl
         loss_fm = feature_loss(fmap_r, fmap_g)
         loss_gen, losses_gen = generator_loss(y_d_hat_g)
-        loss_gen_all = loss_gen + loss_fm + loss_mel + loss_vc + loss_kl + loss_note_kl
+        loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl + loss_hubert
 
     optim_g.zero_grad()
     scaler.scale(loss_gen_all).backward()
@@ -245,7 +262,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
       eval_loss_mel = None
       if global_step % hps.train.eval_interval == 0 and global_step != 0:
         lr = optim_g.param_groups[0]['lr']
-        losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_kl, loss_note_kl]
+        losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_hubert, loss_kl]
         logger.info('Train Epoch: {} [{:.0f}%]'.format(
           epoch,
           100. * batch_idx / len(train_loader)))
@@ -253,7 +270,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         logger.info([x.item() for x in losses] + [global_step, lr])
         
         scalar_dict = {"loss/g/total": loss_gen_all, "loss/d/total": loss_disc_all, "learning_rate": lr, "grad_norm_d": grad_norm_d, "grad_norm_g": grad_norm_g}
-        scalar_dict.update({"loss/g/fm": loss_fm, "loss/g/mel": loss_mel, "loss/g/vc": loss_vc, "loss/g/kl": loss_kl, "loss/g/note_kl": loss_note_kl})
+        scalar_dict.update({"loss/g/fm": loss_fm, "loss/g/mel": loss_mel, "loss/g/hubert": loss_hubert, "loss/g/kl": loss_kl})
 
         scalar_dict.update({"loss/g/{}".format(i): v for i, v in enumerate(losses_gen)})
         scalar_dict.update({"loss/d_r/{}".format(i): v for i, v in enumerate(losses_disc_r)})
@@ -261,17 +278,16 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         image_dict = { 
             "slice/mel_org": utils.plot_spectrogram_to_numpy(y_mel[0].data.cpu().numpy()),
             "slice/mel_gen": utils.plot_spectrogram_to_numpy(y_hat_mel[0].data.cpu().numpy()), 
-            "all/mel": utils.plot_spectrogram_to_numpy(mel[0].data.cpu().numpy()),
-            "all/attn": utils.plot_alignment_to_numpy(attn[0,0].data.cpu().numpy())
+            "all/mel": utils.plot_spectrogram_to_numpy(mel[0].data.cpu().numpy())
         }
         utils.summarize(
           writer=writer,
           global_step=global_step, 
           images=image_dict,
           scalars=scalar_dict)
-        eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger)
+        eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger, hubert)
         eval_loss_mel = float(eval_loss_dict["loss/g/mel"])
-        eval_loss_vc = float(eval_loss_dict["loss/g/vc"])
+        #eval_loss_vc = float(eval_loss_dict["loss/g/vc"])
         utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_latest_99999999.pth"))
         utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_latest_99999999.pth"))
 
@@ -282,9 +298,9 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, global_step)
           utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
         else:
-          eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger)
+          eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger, hubert)
           eval_loss_mel = float(eval_loss_dict["loss/g/mel"])
-          eval_loss_vc = float(eval_loss_dict["loss/g/vc"])
+          #eval_loss_vc = float(eval_loss_dict["loss/g/vc"])
           if hps.train.backup.g_only == False:
             utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
           utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, global_step)
@@ -302,12 +318,12 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     global_step += 1
 
  
-def evaluate(hps, generator, eval_loader, writer_eval, logger):
+def evaluate(hps, generator, eval_loader, writer_eval, logger, hubert):
     spec_segment_size = hps.train.segment_size // hps.data.hop_length
     target_ids = torch.tensor(eval_loader.dataset.get_all_sid())
 
     scalar_dict = {}
-    scalar_dict.update({"loss/g/mel": 0.0, "loss/g/vc": 0.0, "loss/g/kl": 0.0, "loss/g/note_kl": 0.0})
+    scalar_dict.update({"loss/g/mel": 0.0, "loss/g/hubert": 0.0, "loss/g/kl": 0.0})
 
     with torch.no_grad():
       #evalのデータセットを一周する
@@ -324,35 +340,40 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger):
         for i in range(hps.train.backup.mean_of_num_eval):
           with autocast(enabled=hps.train.fp16_run):
             #Generator
-            y_hat, _, ids_slice, _, z_mask,\
-            (z, z_p, (m_p, note_m_p), (logs_p, note_logs_p), m_q, logs_q), vc_o_r_hat = generator(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers, target_ids)
+            (y_hat, tgt_y_hat), ids_slice, _, z_mask,\
+            (z, z_p, m_p, logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers, target_ids)
           y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
           y_hat = y_hat.float()
           y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
-          vc_o_r_hat_mel = mel_spectrogram_torch_data(vc_o_r_hat.float().squeeze(1), hps.data)
+          #vc_o_r_hat_mel = mel_spectrogram_torch_data(vc_o_r_hat.float().squeeze(1), hps.data)
           batch_num = batch_idx
 
+          #HuBERT Loss
+          tgt_y_hat = tgt_y_hat.float()
+          tgt_y_hat_16k = torchaudio.functional.resample(tgt_y_hat, 24000, 16000)
+          y_16k = torchaudio.functional.resample(y, 24000, 16000)
+          tgt_units = hubert.units(tgt_y_hat_16k)
+          units = hubert.units(y_16k)
+
           loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-          dispose_length = y_mel.size(2) // 4 # loss_vcは精度を上げるためmelを真ん中の半分だけ使う
-          disposed_y_mel = y_mel[:, :, dispose_length:-dispose_length]
-          disposed_vc_o_r_hat_mel = vc_o_r_hat_mel[:, :, dispose_length:-dispose_length]
-          loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel
+          loss_hubert = F.l1_loss(units, tgt_units) * hps.train.l1_hubert
+          #dispose_length = y_mel.size(2) // 4 # loss_vcは精度を上げるためmelを真ん中の半分だけ使う
+          #disposed_y_mel = y_mel[:, :, dispose_length:-dispose_length]
+          #disposed_vc_o_r_hat_mel = vc_o_r_hat_mel[:, :, dispose_length:-dispose_length]
+          #loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel
           loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
-          loss_note_kl = kl_loss(z, logs_q, note_m_p, note_logs_p, z_mask) * hps.train.note_kl
 
           scalar_dict["loss/g/mel"] += loss_mel
-          scalar_dict["loss/g/vc"] += loss_vc
           scalar_dict["loss/g/kl"] += loss_kl
-          scalar_dict["loss/g/note_kl"] += loss_note_kl
+          scalar_dict["loss/g/hubert"] += loss_hubert
           #print(f"loss/g/mel : {loss_mel} loss/g/vc : {loss_vc} loss/g/kl : {loss_kl} loss/g/note_kl : {loss_note_kl}")
       
     #lossをepoch1周の結果をiter単位の平均値に
     iter_num = (batch_num + 1) * hps.train.backup.mean_of_num_eval
     scalar_dict["loss/g/mel"] /= iter_num
-    scalar_dict["loss/g/vc"] /= iter_num
+    scalar_dict["loss/g/hubert"] /= iter_num
     scalar_dict["loss/g/kl"] /= iter_num
-    scalar_dict["loss/g/note_kl"] /= iter_num
-    logger.info(f"loss/g/mel : {scalar_dict['loss/g/mel']} loss/g/vc : {scalar_dict['loss/g/vc']} loss/g/kl : {scalar_dict['loss/g/kl']} loss/g/note_kl : {scalar_dict['loss/g/note_kl']}")
+    logger.info(f"loss/g/mel : {scalar_dict['loss/g/mel']} loss/g/hubert : {scalar_dict['loss/g/hubert']} loss/g/kl : {scalar_dict['loss/g/kl']}")
 
     utils.summarize(
       writer=writer_eval,

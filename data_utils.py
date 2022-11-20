@@ -174,18 +174,14 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         2) normalizes text and converts them to sequences of integers
         3) computes spectrograms from audio files.
     """
-    def __init__(self, audiopaths_sid_text, hparams, no_text=False, augmentation=False, augmentation_params=None, no_use_textfile = False, disable_tqdm = False):
-        if no_use_textfile:
-            self.audiopaths_sid_text = list()
-        else:
-            self.audiopaths_sid_text = load_filepaths_and_text(audiopaths_sid_text)
+    def __init__(self, audiopaths_sid_text, hparams, augmentation=False, augmentation_params=None, disable_tqdm = False):
+        self.audiopaths_sid_text = load_filepaths_and_text(audiopaths_sid_text)
         self.text_cleaners = hparams.text_cleaners
         self.max_wav_value = hparams.max_wav_value
         self.sampling_rate = hparams.sampling_rate
         self.filter_length  = hparams.filter_length
         self.hop_length     = hparams.hop_length
         self.win_length     = hparams.win_length
-        self.no_text = no_text
         self.augmentation = augmentation
         if augmentation :
             self.gain_p = augmentation_params.gain_p
@@ -228,70 +224,33 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         lengths = []
         
         for audiopath, sid, text, notes in tqdm.tqdm(self.audiopaths_sid_text, disable=self.disable_tqdm):
-            if self.min_text_len <= len(text) and len(text) <= self.max_text_len:
-                audiopaths_sid_text_new.append([audiopath, sid, text, notes])
-                lengths.append(os.path.getsize(audiopath) // (2 * self.hop_length))
+            audiopaths_sid_text_new.append([audiopath, sid, text, notes])
+            lengths.append(os.path.getsize(audiopath) // (2 * self.hop_length))
         self.audiopaths_sid_text = audiopaths_sid_text_new
         self.lengths = lengths
-
-    def get_note_list(self, border_path):
-        note_border = list()
-        with open(border_path) as f:
-            reader = csv.reader(f)
-            for row in reader:
-                note_border.append(float(row[0]))
-        return note_border
-
-    def get_f0(self, audio_norm):
-        x = audio_norm.to('cpu').detach().numpy().copy().astype(np.float64)
-        _f0, _time = pw.dio(x, self.sampling_rate)    # 基本周波数の抽出
-        f0 = pw.stonemask(x, _f0, _time, self.sampling_rate)  # 基本周波数の修正
-        for index, pitch in enumerate(f0):
-            #0.
-            f0[index] = round(pitch, 1)
-        #f0 = torch.from_numpy(f0.astype(np.float64)).clone()
-        return f0
-
-    def f0_to_note(self, f0, borders):
-        f0 = f0[0::4]
-        note = np.zeros(f0.shape)
-        borders = borders[1:]
-
-        for i in range(f0.shape[0]):
-            for j, border in enumerate(borders):
-                if f0[i] < border:
-                    note[i] = j
-                    break
-                else:
-                  pass
-        return note
-
-    def get_note_text(self, audio_norm):
-        f0 = self.get_f0(audio_norm)
-        note = self.f0_to_note(f0, self.note_border)
-        text = '-'.join(map(str, map(int, note)))
-        #print(text)
-        return text
         
 
     def get_audio_text_speaker_pair(self, audiopath_sid_text):
         # separate filename, speaker_id and text
         audiopath, sid, text, note = audiopath_sid_text[0], audiopath_sid_text[1], audiopath_sid_text[2], audiopath_sid_text[3]
         text = self.get_text(text)
-        if self.no_text:
-          text = self.get_text("a")
+        #DAは一旦削除、再導入する場合は全部最新になっているか確認すること
+        """
         if self.augmentation:
             spec, wav, note_, execute_flag = self.get_audio(audiopath)
             if execute_flag:
                 note = note_
         else:
             spec, wav, _, _ = self.get_audio(audiopath)
+        """
+        spec, wav, _, _ = self.get_audio(audiopath)
         sid = self.get_sid(sid)
         note = self.get_note(note)
         return (text, spec, wav, sid, note)
         
     @retry(exceptions=(PermissionError), tries=100, delay=10)
     def get_audio(self, filename):
+        #DAした場合、ピッチの再計算が必要なのでその為の管理フラグ
         execute_flag = False
         # 音声データは±1.0内に正規化したtorchベクトルでunsqueeze(0)で外側1次元くるんだものを扱う
         audio, sampling_rate = load_wav_to_torch(filename)
@@ -312,10 +271,12 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             #audio_noised = torch.clamp(audio_noised, -1, 1)
             # audio(音声波形)は教師信号となるのでノイズは含まずaugmentationのみしたものを使用
             audio_norm = audio_augmented
+            """
             if execute_flag:
                 note = self.get_note_text(audio_norm[0])
             else:
                 note = ""
+            """
             # spec(スペクトログラム)は入力信号となるのでaugmentationしてさらにノイズを付加したものを使用
             spec = spectrogram_torch(audio_norm, self.filter_length,
                 self.sampling_rate, self.hop_length, self.win_length,
@@ -381,13 +342,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         return audio_norm
 
     def get_text(self, text):
-        if self.cleaned_text:
-            text_norm = cleaned_text_to_sequence(text)
-        else:
-            text_norm = text_to_sequence(text, self.text_cleaners)
-        if self.add_blank:
-            text_norm = commons.intersperse(text_norm, 0)
-        text_norm = torch.LongTensor(text_norm)
+        text_norm = torch.LongTensor(np.load(text))
         return text_norm
 
     def get_note(self, note):
@@ -439,7 +394,7 @@ class TextAudioSpeakerCollate():
         sid = torch.LongTensor(len(batch))
         note_lengths = torch.LongTensor(len(batch))
 
-        text_padded = torch.LongTensor(len(batch), max_text_len)
+        text_padded = torch.LongTensor(len(batch), max_text_len, 256)
         spec_padded = torch.FloatTensor(len(batch), batch[0][1].size(0), max_spec_len)
         wav_padded = torch.FloatTensor(len(batch), 1, max_wav_len)
         note_padded = torch.LongTensor(len(batch), max_note_len)
@@ -451,8 +406,8 @@ class TextAudioSpeakerCollate():
             row = batch[ids_sorted_decreasing[i]]
 
             text = row[0]
-            text_padded[i, :text.size(0)] = text
-            text_lengths[i] = text.size(0)
+            text_padded[i, :text.shape[0], :] = text
+            text_lengths[i] = text.shape[0]
 
             spec = row[1]
             spec_padded[i, :, :spec.size(1)] = spec

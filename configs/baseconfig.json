@@ -22,7 +22,7 @@
     "warmup_epochs": 0,
     "c_mel": 45,
     "c_kl": 1.0,
-    "note_kl": 0.10
+    "l1_hubert": 45
   },
   "data": {
     "training_files": "filelists/train_config_textful.txt",
@@ -97,7 +97,13 @@
     "use_mel_train": false
   },
   "others": {
-    "os_type": "linux"
+    "os_type": "linux",
+    "create_vc_sample": false,
+    "vc_sample_config":{
+      "source_id":0,
+      "target_id":101,
+      "input_filename":"dataset/00_myvoice/wav/xxxx.wav"
+    } 
   },
   "augmentation": {
     "enable": false,
