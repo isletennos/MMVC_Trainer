@@ -211,7 +211,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
     with autocast(enabled=hps.train.fp16_run):
       (y_hat, tgt_y_hat), ids_slice, _, z_mask,\
-        (z, z_p, m_p, logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers, target_ids)
+        ((z, z_p, m_p), logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers, target_ids)
       y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
     y_hat = y_hat.float()
     y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
@@ -341,7 +341,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger, hubert):
           with autocast(enabled=hps.train.fp16_run):
             #Generator
             (y_hat, tgt_y_hat), ids_slice, _, z_mask,\
-            (z, z_p, m_p, logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers, target_ids)
+            ((z, z_p, m_p), logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers, target_ids)
           y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
           y_hat = y_hat.float()
           y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
@@ -350,8 +350,9 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger, hubert):
 
           #HuBERT Loss
           tgt_y_hat = tgt_y_hat.float()
+          y_ = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
           tgt_y_hat_16k = torchaudio.functional.resample(tgt_y_hat, 24000, 16000)
-          y_16k = torchaudio.functional.resample(y, 24000, 16000)
+          y_16k = torchaudio.functional.resample(y_, 24000, 16000)
           tgt_units = hubert.units(tgt_y_hat_16k)
           units = hubert.units(y_16k)
 
