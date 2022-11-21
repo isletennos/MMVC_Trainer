@@ -35,14 +35,14 @@
     ],
     "max_wav_value": 32768.0,
     "sampling_rate": 24000,
-    "filter_length": 512,
-    "hop_length": 128,
-    "win_length": 512,
+    "filter_length": 1024,
+    "hop_length": 256,
+    "win_length": 1024,
     "n_mel_channels": 80,
     "mel_fmin": 0.0,
     "mel_fmax": null,
     "add_blank": true,
-    "n_speakers": 255,
+    "n_speakers": 127,
     "cleaned_text": false
   },
   "model": {
@@ -50,7 +50,7 @@
     "hidden_channels": 192,
     "filter_channels": 768,
     "n_heads": 2,
-    "n_layers": 6,
+    "n_layers": 2,
     "kernel_size": 3,
     "p_dropout": 0.1,
     "resblock": "1",
@@ -78,7 +78,7 @@
     ],
     "upsample_rates": [
       8,
-      4,
+      8,
       2,
       2
     ],
@@ -92,7 +92,7 @@
     "n_layers_q": 3,
     "use_spectral_norm": false,
     "n_flow": 12,
-    "gin_channels": 256,
+    "gin_channels": 128,
     "n_note": 79,
     "use_mel_train": false
   },
