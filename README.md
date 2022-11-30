@@ -10,6 +10,15 @@ google colaboratoryを用いることで、個人の環境に依存せず、か�
 ## MMVC_Client
 MMVCを実際に動かすClient software  
 https://github.com/isletennos/MMVC_Client
+
+### 有志によるMMVC Client
+(1) [Voice Changer Trainer and Player](https://github.com/w-okada/voice-changer) 
+
+Docker環境、Google Colab環境でMMVCを動かすように作成されたClient software。
+Docker環境はWSL2, Linuxの両方で動作可能です。ある程度最近のものであればCPUでの稼働も可能です(i7-9700Kで実績あり。下記デモ参照)。
+
+[Docker環境(GPU) デモ](https://twitter.com/DannadoriYellow/status/1588115075587768326?s=20&t=f-sduXYzrq2sCdOpjKbUjg), [Docker環境(CPU)デモ](https://twitter.com/DannadoriYellow/status/1588317790502801409?s=20&t=f-sduXYzrq2sCdOpjKbUjg), [Colab環境デモ](https://twitter.com/DannadoriYellow/status/1564897136999022592?s=20&t=f-sduXYzrq2sCdOpjKbUjg)
+
 ## concept
 「簡単」「だれでも」「好きな声に」「リアルタイムで」
 ## Demo
@@ -176,17 +185,17 @@ dataset
 以降、「チュートリアル : ずんだもんになる Ph3.」と同様のため割愛  
 ## 有志によるチュートリアル動画
 ### v1.2.1.x
-| 前準備編　　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40415108) | [YouTube](https://www.youtube.com/watch?v=gq1Hpn5CARw&ab_channel=popi) |
-|:--------------|:------------|:------------|
-| 要修正音声　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40420683)| [YouTube](https://youtu.be/NgzC7Nuk6gg)  |
-| 前準備編2 　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40445164)| [YouTube](https://youtu.be/m4Jew7sTs9w)  
-| 学習編_前1　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40467662)| [YouTube](https://youtu.be/HRSPEy2jUvg)  
-| 学習編_前2　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40473168)| [YouTube](https://youtu.be/zQW59vrOSuA)  
-| 学習編_後 　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40490554)| [YouTube](https://www.youtube.com/watch?v=uB3YfdKzo-g&ab_channel=popi)  
-| リアルタイム編 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40415108)| [YouTube](https://youtu.be/Al5DFCvKLFA)  
-| 質問編　　　　 | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40599514)| [YouTube](https://youtu.be/aGBcqu5M6-c)  
-| 応用編_九州そら| [ニコニコ動画](https://www.nicovideo.jp/watch/sm40647601)| [YouTube](https://youtu.be/MEXKZoHVd-A)  
-| 応用編_音街ウナ| [ニコニコ動画](https://www.nicovideo.jp/watch/sm40714406)| [YouTube](https://youtu.be/JDMlRz-PkSE)  
+| 前準備編        | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40415108) | [YouTube](https://www.youtube.com/watch?v=gq1Hpn5CARw&ab_channel=popi) |
+| :-------------- | :-------------------------------------------------------- | :--------------------------------------------------------------------- |
+| 要修正音声      | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40420683) | [YouTube](https://youtu.be/NgzC7Nuk6gg)                                |
+| 前準備編2       | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40445164) | [YouTube](https://youtu.be/m4Jew7sTs9w)                                |
+| 学習編_前1      | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40467662) | [YouTube](https://youtu.be/HRSPEy2jUvg)                                |
+| 学習編_前2      | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40473168) | [YouTube](https://youtu.be/zQW59vrOSuA)                                |
+| 学習編_後       | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40490554) | [YouTube](https://www.youtube.com/watch?v=uB3YfdKzo-g&ab_channel=popi) |
+| リアルタイム編  | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40415108) | [YouTube](https://youtu.be/Al5DFCvKLFA)                                |
+| 質問編          | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40599514) | [YouTube](https://youtu.be/aGBcqu5M6-c)                                |
+| 応用編_九州そら | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40647601) | [YouTube](https://youtu.be/MEXKZoHVd-A)                                |
+| 応用編_音街ウナ | [ニコニコ動画](https://www.nicovideo.jp/watch/sm40714406) | [YouTube](https://youtu.be/JDMlRz-PkSE)                                |
 
 ## Q&A
 下記サイトをご参考ください。  
