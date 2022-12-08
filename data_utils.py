@@ -342,7 +342,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         return audio_norm
 
     def get_text(self, text):
-        text_norm = torch.LongTensor(np.load(text))
+        text_norm = torch.FloatTensor(np.load(text))
         return text_norm
 
     def get_note(self, note):
