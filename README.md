@@ -14,6 +14,7 @@ https://github.com/isletennos/MMVC_Client
 ### 有志によるMMVC Client
 (1) [Voice Changer Trainer and Player](https://github.com/w-okada/voice-changer) 
 
+
 様々な環境でMMVCを動かすように作成されたClient software。
 
 - 動作確認状況
@@ -218,7 +219,8 @@ dataset
 https://mmvc.readthedocs.io/ja/latest/index.html
 ## MMVCコミュニティサーバ(discord)
 開発の最新情報や、不明点のお問合せ、MMVCの活用法などMMVCに関するコミュニティサーバです。  
-https://discord.gg/PgspuDSTEc
+~~https://discord.gg/PgspuDSTEc~~
+※2022/12/02 22:29 一時的に招待リンクを停止しています。時間を空けて再度ご確認ください。
 
 ## Special thanks
 - JVS (Japanese versatile speech) corpus  
