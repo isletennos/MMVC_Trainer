@@ -14,10 +14,26 @@ https://github.com/isletennos/MMVC_Client
 ### 有志によるMMVC Client
 (1) [Voice Changer Trainer and Player](https://github.com/w-okada/voice-changer) 
 
-Docker環境、Google Colab環境でMMVCを動かすように作成されたClient software。
-Docker環境はWSL2, Linuxの両方で動作可能です。ある程度最近のものであればCPUでの稼働も可能です(i7-9700Kで実績あり。下記デモ参照)。
+様々な環境でMMVCを動かすように作成されたClient software。
 
-[Docker環境(GPU) デモ](https://twitter.com/DannadoriYellow/status/1588115075587768326?s=20&t=f-sduXYzrq2sCdOpjKbUjg), [Docker環境(CPU)デモ](https://twitter.com/DannadoriYellow/status/1588317790502801409?s=20&t=f-sduXYzrq2sCdOpjKbUjg), [Colab環境デモ](https://twitter.com/DannadoriYellow/status/1564897136999022592?s=20&t=f-sduXYzrq2sCdOpjKbUjg)
+- 動作確認状況
+
+| #   | os            | middle   | トレーニングアプリ | ボイスチェンジャー             |
+| --- | ------------- | -------- | ------------------ | ------------------------------ |
+| 1   | Windows       | Anaconda | 未                 | 未                             |
+| 2   | Windows(WSL2) | Docker   | wsl2+ubuntuで確認  | wsl2+ubuntuで確認              |
+| 3   | Windows(WSL2) | Anaconda | 未                 | ubuntuで確認                   |
+| 4   | Mac(Intel)    | Anaconda | 未                 | 動作するが激重。(2019, corei5) |
+| 5   | Mac(M1)       | Anaconda | 未                 | M1 MBA, M1 MBPで確認           |
+| 6   | Linux         | Docker   | debianで確認       | debianで確認                   |
+| 7   | Linux         | Anaconda | 未                 | 未                             |
+| 8   | Colab         | Notebook | 確認済み           | 確認済み                       |
+
+
+ある程度最近のものであればCPUでの稼働も可能です(i7-9700Kで実績あり。下記デモ参照)。
+
+- デモ動画
+[Docker環境(GPU) デモ](https://twitter.com/DannadoriYellow/status/1588115075587768326?s=20&t=f-sduXYzrq2sCdOpjKbUjg), [Docker環境(CPU)デモ](https://twitter.com/DannadoriYellow/status/1588317790502801409?s=20&t=f-sduXYzrq2sCdOpjKbUjg), [Colab環境デモ](https://youtu.be/TogfMzXH1T0)
 
 ## concept
 「簡単」「だれでも」「好きな声に」「リアルタイムで」
