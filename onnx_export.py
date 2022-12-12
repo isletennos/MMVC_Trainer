@@ -81,8 +81,7 @@ def load_checkpoint(checkpoint_path, model, optimizer=None):
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_file", required=True)
-    parser.add_argument("--input_vits_pth", required=True)
-    parser.add_argument("--output_vits_onnx", required=True)
+    parser.add_argument("--convert_pth", required=True)
     return parser.parse_args()
 
 
@@ -148,10 +147,13 @@ def main(args):
     for i in net_g.parameters():
         i.requires_grad = False
     _ = net_g.eval()
-    _ = load_checkpoint(args.input_vits_pth, net_g, None)
+    _ = load_checkpoint(args.convert_pth, net_g, None)
     print("Model data loading succeeded.\nConverting start.")
 
     # Convert to ONNX
+    dirname = os.path.dirname(args.convert_pth)
+    filenames = os.path.splitext(os.path.basename(args.convert_pth))
+    onnx_file = os.path.join(dirname, filenames[0] + ".onnx")
     dummy_specs = torch.rand(1, 257, 60)
     dummy_lengths = torch.LongTensor([60])
     dummy_sid_src = torch.LongTensor([0])
@@ -159,7 +161,7 @@ def main(args):
     torch.onnx.export(
         net_g,
         (dummy_specs, dummy_lengths, dummy_sid_src, dummy_sid_tgt),
-        args.output_vits_onnx,
+        onnx_file,
         do_constant_folding=False,
         opset_version=13,
         verbose=False,
@@ -168,17 +170,17 @@ def main(args):
         dynamic_axes={
             "specs": {2: "length"}
         })
-    model_onnx2 = onnx.load(args.output_vits_onnx)
+    model_onnx2 = onnx.load(onnx_file)
     model_simp, check = simplify(model_onnx2)
-    onnx.save(model_simp, args.output_vits_onnx)
+    onnx.save(model_simp, onnx_file)
     print("Done\n")
 
     print("vits onnx benchmark")
     ort_session_cpu = ort.InferenceSession(
-        args.output_vits_onnx,
+        onnx_file,
         providers=["CPUExecutionProvider"])
     ort_session_cuda = ort.InferenceSession(
-        args.output_vits_onnx,
+        onnx_file,
         providers=["CUDAExecutionProvider"])
     inspect_onnx(ort_session_cpu)
     print("ONNX CPU")
