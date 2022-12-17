@@ -16,51 +16,6 @@ ZUNDAMON_SID = 101
 MY_SID = 0
 VAL_PER = 20
 
-def get_f0(wav_path, frame_length=2048, win_length=None, hop_length=None):
-    y, sr = librosa.load(wav_path)
-    #Get f0
-    #win_length : If None, defaults to frame_length // 2 hop_length : If None, defaults to frame_length // 4
-    #https://librosa.org/doc/main/generated/librosa.pyin.html
-    f0, _, _ = librosa.pyin(y, sr = sr, frame_length=frame_length, win_length=win_length, hop_length=hop_length, fmin = librosa.note_to_hz('C2'), fmax= librosa.note_to_hz('C7'))
-    f0 = np.nan_to_num(f0)
-    return f0
-
-#f0を連続値>カテゴリ(note)
-def f0_to_note(f0, borders):
-    note = np.zeros(f0.shape)
-    borders = borders[1:]
-
-    for i in range(f0.shape[0]):
-        for j, border in enumerate(borders):
-            if f0[i] < border:
-                note[i] = j
-                break
-            else:
-              pass
-    return note
-
-#音階リストの読み込み
-def get_note_list(border_path):
-    note_border = list()
-    with open(border_path) as f:
-        reader = csv.reader(f)
-        for row in reader:
-            note_border.append(float(row[0]))
-    return note_border
-
-#既存のテキストエンコーダーと同様に読み込みができる所に処理
-def note2text(note):
-    note_text = '-'.join(map(str, map(int, note)))
-    return note_text
-
-#音階を記載
-def get_note_text(wav_path, note_list_path):
-    f0 = get_f0(wav_path)
-    note_list = get_note_list(note_list_path)
-    note = f0_to_note(f0, note_list)
-    text = note2text(note)
-    return text
-
 #textを音素に
 def mozi2phone(hubert, wav_path, d_):
     source, sr = torchaudio.load(wav_path)
@@ -76,10 +31,9 @@ def mozi2phone(hubert, wav_path, d_):
     return save_path + ".npy"
 
 #filelistの1行を作成する
-def create_data_line(wav, note_list_path, speaker_id, d, hubert):
+def create_data_line(wav, speaker_id, d, hubert):
     units = mozi2phone(hubert, wav, d)
-    note = get_note_text(wav, note_list_path)
-    one_line = wav + "|"+ str(speaker_id) + "|"+ units + "|"+ note + "\n"
+    one_line = wav + "|"+ str(speaker_id) + "|"+ units + "\n"
     print(one_line)
     return one_line
 
@@ -109,7 +63,7 @@ def write_configs(lists, filename):
     with open('filelists/' + filename + '_Correspondence.txt', 'w', encoding='utf-8', newline='\n') as f:
         f.writelines(lists[2])
 
-def create_dataset(filename, note_list_path = "note_correspondence.csv"):
+def create_dataset(filename):
     #空白話者の先頭からスタート
     speaker_id = NUM_TRAINED_SPEAKER
     #list回りの宣言とソート
@@ -128,7 +82,7 @@ def create_dataset(filename, note_list_path = "note_correspondence.csv"):
             continue
         counter = 0
         for wav in wav_file_list:
-            one_line = create_data_line(wav, note_list_path, speaker_id, d, hubert)
+            one_line = create_data_line(wav, speaker_id, d, hubert)
             if counter % VAL_PER != 0:
                 output_file_list.append(one_line)
             else:
@@ -143,7 +97,7 @@ def create_dataset(filename, note_list_path = "note_correspondence.csv"):
     write_configs(lists, filename)
     return NUM_MAX_SID
 
-def create_dataset_zundamon(filename, note_list_path = "note_correspondence.csv"):
+def create_dataset_zundamon(filename):
     #list回りの宣言とソート
     textful_dir_list = glob.glob("dataset/**/")
     textful_dir_list.sort()
@@ -166,7 +120,7 @@ def create_dataset_zundamon(filename, note_list_path = "note_correspondence.csv"
         exit()
     counter = 0
     for wav in wav_file_list:
-        one_line = create_data_line(wav, note_list_path, speaker_id, d, hubert)
+        one_line = create_data_line(wav, speaker_id, d, hubert)
         if counter % VAL_PER != 0:
             output_file_list.append(one_line)
         else:
@@ -183,7 +137,7 @@ def create_dataset_zundamon(filename, note_list_path = "note_correspondence.csv"
         exit()
     counter = 0
     for wav in wav_file_list:
-        one_line = create_data_line(wav, note_list_path, speaker_id, d, hubert)
+        one_line = create_data_line(wav, speaker_id, d, hubert)
         if counter % VAL_PER != 0:
             output_file_list.append(one_line)
         else:
@@ -195,7 +149,7 @@ def create_dataset_zundamon(filename, note_list_path = "note_correspondence.csv"
     write_configs(lists, filename)
     return NUM_MAX_SID
 
-def create_dataset_character(filename, tid, note_list_path = "note_correspondence.csv"):
+def create_dataset_character(filename, tid):
     #list回りの宣言とソート
     textful_dir_list = glob.glob("dataset/**/")
     textful_dir_list.sort()
@@ -218,7 +172,7 @@ def create_dataset_character(filename, tid, note_list_path = "note_correspondenc
         exit()
     counter = 0
     for wav in wav_file_list:
-        one_line = create_data_line(wav, note_list_path, speaker_id, d, hubert)
+        one_line = create_data_line(wav, speaker_id, d, hubert)
         if counter % VAL_PER != 0:
             output_file_list.append(one_line)
         else:
@@ -235,7 +189,7 @@ def create_dataset_character(filename, tid, note_list_path = "note_correspondenc
         exit()
     counter = 0
     for wav in wav_file_list:
-        one_line = create_data_line(wav, note_list_path, speaker_id, d, hubert)
+        one_line = create_data_line(wav, speaker_id, d, hubert)
         if counter % VAL_PER != 0:
             output_file_list.append(one_line)
         else:
@@ -247,7 +201,7 @@ def create_dataset_character(filename, tid, note_list_path = "note_correspondenc
     write_configs(lists, filename)
     return NUM_MAX_SID
 
-def create_dataset_multi_character(filename, file_path, note_list_path = "note_correspondence.csv"):
+def create_dataset_multi_character(filename, file_path):
     #list回りの宣言とソート
     textful_dir_list = glob.glob("dataset/**/")
     textful_dir_list.sort()
@@ -267,7 +221,7 @@ def create_dataset_multi_character(filename, file_path, note_list_path = "note_c
                 exit()
             counter = 0
             for wav in wav_file_list:
-                one_line = create_data_line(wav, note_list_path, sid, target_dir, hubert)
+                one_line = create_data_line(wav, sid, target_dir, hubert)
                 if counter % VAL_PER != 0:
                     output_file_list.append(one_line)
                 else:
