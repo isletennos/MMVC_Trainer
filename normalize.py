@@ -2,6 +2,7 @@ import shutil
 import os
 import glob
 from pydub import AudioSegment, silence
+import sys
 # -16 + -6
 NORMALIZE_dBFS = -22
 #50ms
@@ -67,3 +68,7 @@ def convert_audio_mmvc_format(back_up = True):
             if back_up:
                 shutil.copyfile(wav, "{}/back_up/{}".format(os.path.dirname(wav), os.path.basename(wav)))
             normalize_audio(wav)
+
+if __name__ == '__main__':
+    args = sys.argv
+    convert_audio_mmvc_format(args[0])
