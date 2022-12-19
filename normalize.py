@@ -3,6 +3,7 @@ import os
 import glob
 from pydub import AudioSegment, silence
 import sys
+import tqdm
 # -16 + -6
 NORMALIZE_dBFS = -22
 #50ms
@@ -52,11 +53,14 @@ def normalize_audio(file_name):
     #normalize dBFS -6
     change_in_dBFS = (NORMALIZE_dBFS) - source_dBFS
     normalized_sound = sound.apply_gain(change_in_dBFS)
+    #16bitへ
+    normalized_sound = normalized_sound.set_sample_width(2)
+    #output
     normalized_sound.export(file_name, format="wav")
 
 def convert_audio_mmvc_format(back_up = True):
     dataset_dir_list = glob.glob("dataset/**/")
-    for d in dataset_dir_list:
+    for d in tqdm.tqdm(dataset_dir_list):
         d = d[:-1]
         wav_file_list = glob.glob(d+"/wav/*.wav")
         if len(wav_file_list) == 0:
@@ -64,11 +68,12 @@ def convert_audio_mmvc_format(back_up = True):
             continue
         if back_up:
             os.makedirs(d+"/wav/back_up", exist_ok=True)
-        for wav in wav_file_list:
+        for wav in tqdm.tqdm(wav_file_list):
             if back_up:
                 shutil.copyfile(wav, "{}/back_up/{}".format(os.path.dirname(wav), os.path.basename(wav)))
             normalize_audio(wav)
 
 if __name__ == '__main__':
     args = sys.argv
-    convert_audio_mmvc_format(args[0])
+    print(args[1])
+    convert_audio_mmvc_format(args[1])

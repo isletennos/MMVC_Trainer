@@ -41,7 +41,6 @@ from losses import (
   kl_loss
 )
 from mel_processing import mel_spectrogram_torch_data, spec_to_mel_torch_data
-from text.symbols import symbols
 
 torch.backends.cudnn.benchmark = True
 global_step = 0
@@ -120,7 +119,6 @@ def run(rank, n_gpus, hps):
   else:
       channels = hps.data.filter_length // 2 + 1
   net_g = SynthesizerTrn(
-      len(symbols),
       channels,
       hps.train.segment_size // hps.data.hop_length,
       n_speakers=hps.data.n_speakers,
@@ -198,12 +196,11 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
   spec_segment_size = hps.train.segment_size // hps.data.hop_length
   target_ids = torch.tensor(train_loader.dataset.get_all_sid())
 
-  for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers, note, note_lengths) in enumerate(tqdm(train_loader, desc="Epoch {}".format(epoch))):
+  for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(tqdm(train_loader, desc="Epoch {}".format(epoch))):
     x, x_lengths = x.cuda(rank, non_blocking=True), x_lengths.cuda(rank, non_blocking=True)
     spec, spec_lengths = spec.cuda(rank, non_blocking=True), spec_lengths.cuda(rank, non_blocking=True)
     y, y_lengths = y.cuda(rank, non_blocking=True), y_lengths.cuda(rank, non_blocking=True)
     speakers = speakers.cuda(rank, non_blocking=True)
-    note, note_lengths = note.cuda(rank, non_blocking=True), note_lengths.cuda(rank, non_blocking=True)
 
     mel = spec_to_mel_torch_data(spec, hps.data)
     if hps.model.use_mel_train:
@@ -211,7 +208,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
     with autocast(enabled=hps.train.fp16_run):
       (y_hat, tgt_y_hat), ids_slice, _, z_mask,\
-        ((z, z_p, m_p), logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers, target_ids)
+        ((z, z_p, m_p), logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, speakers, target_ids)
       y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
     y_hat = y_hat.float()
     y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
@@ -327,12 +324,11 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger, hubert):
 
     with torch.no_grad():
       #evalのデータセットを一周する
-      for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers, note, note_lengths) in enumerate(tqdm(eval_loader, desc="Epoch {}".format("eval"))):
+      for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers) in enumerate(tqdm(eval_loader, desc="Epoch {}".format("eval"))):
         x, x_lengths = x.cuda(0), x_lengths.cuda(0)
         spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
         y, y_lengths = y.cuda(0), y_lengths.cuda(0)
         speakers = speakers.cuda(0)
-        note, note_lengths = note.cuda(0), note_lengths.cuda(0)
         mel = spec_to_mel_torch_data(spec, hps.data)
         if hps.model.use_mel_train:
             spec = mel
@@ -341,7 +337,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger, hubert):
           with autocast(enabled=hps.train.fp16_run):
             #Generator
             (y_hat, tgt_y_hat), ids_slice, _, z_mask,\
-            ((z, z_p, m_p), logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, note, note_lengths, speakers, target_ids)
+            ((z, z_p, m_p), logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, speakers, target_ids)
           y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
           y_hat = y_hat.float()
           y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
