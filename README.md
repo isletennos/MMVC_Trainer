@@ -66,7 +66,11 @@ community(discord):https://discord.gg/PgspuDSTEc
 ・Google アカウント
 
 ## Install
-このリポジトリをダウンロードして、展開、展開したディレクトリをGoogle Drive上にアップロードしてください。
+
+下記ボタンからColab上で自分のGoogle Driveにインストールしてください。
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](http://colab.research.google.com/github/stealthinu/blob/v1.3.2.0/notebook/00_Clone_Repo.ipynb)
+
 
 ## Usage
 ### チュートリアル : ずんだもんになる
