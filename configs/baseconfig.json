@@ -95,7 +95,7 @@
   },
   "others": {
     "os_type": "linux",
-    "input_filename": "dataset/test_sample.wav",
+    "input_filename": "dataset/textful/00_myvoice/wav/emotion002.wav",
     "source_id":107,
     "target_id":100
   },

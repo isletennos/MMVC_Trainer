@@ -179,14 +179,9 @@ def main(args):
     ort_session_cpu = ort.InferenceSession(
         onnx_file,
         providers=["CPUExecutionProvider"])
-    ort_session_cuda = ort.InferenceSession(
-        onnx_file,
-        providers=["CUDAExecutionProvider"])
     inspect_onnx(ort_session_cpu)
     print("ONNX CPU")
     benchmark(ort_session_cpu)
-    print("ONNX CUDA")
-    benchmark(ort_session_cuda)
 
 
 if __name__ == '__main__':
