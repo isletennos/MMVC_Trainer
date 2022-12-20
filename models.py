@@ -7,7 +7,6 @@ from torch.nn import functional as F
 import commons
 import modules
 import attentions
-import monotonic_align
 
 from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
@@ -52,50 +51,6 @@ class TextEncoder(nn.Module):
 
     m, logs = torch.split(stats, self.out_channels, dim=1)
     return x, m, logs, x_mask
-
-class NoteEncoder(nn.Module):
-  def __init__(self,
-      n_vocab,
-      out_channels,
-      hidden_channels,
-      filter_channels,
-      n_heads,
-      n_layers,
-      kernel_size,
-      p_dropout):
-    super().__init__()
-    self.n_vocab = n_vocab
-    self.out_channels = out_channels
-    self.hidden_channels = hidden_channels
-    self.filter_channels = filter_channels
-    self.n_heads = n_heads
-    self.n_layers = n_layers
-    self.kernel_size = kernel_size
-    self.p_dropout = p_dropout
-
-    self.emb = nn.Embedding(n_vocab, hidden_channels)
-    nn.init.normal_(self.emb.weight, 0.0, hidden_channels**-0.5)
-
-    self.encoder = attentions.Encoder(
-      hidden_channels,
-      filter_channels,
-      n_heads,
-      n_layers,
-      kernel_size,
-      p_dropout)
-    self.proj= nn.Conv1d(hidden_channels, out_channels * 2, 1)
-
-  def forward(self, x, x_lengths):
-    x = self.emb(x) * math.sqrt(self.hidden_channels) # [b, t, h]
-    x = torch.transpose(x, 1, -1) # [b, h, t]
-    x_mask = torch.unsqueeze(commons.sequence_mask(x_lengths, x.size(2)), 1).to(x.dtype)
-
-    x = self.encoder(x * x_mask, x_mask)
-    stats = self.proj(x) * x_mask
-
-    m, logs = torch.split(stats, self.out_channels, dim=1)
-    return x, m, logs, x_mask
-
 
 class ResidualCouplingBlock(nn.Module):
   def __init__(self,
@@ -327,7 +282,6 @@ class SynthesizerTrn(nn.Module):
   """
 
   def __init__(self, 
-    n_vocab,
     spec_channels,
     segment_size,
     inter_channels,
@@ -346,15 +300,12 @@ class SynthesizerTrn(nn.Module):
     n_flow,
     n_speakers=0,
     gin_channels=0,
-    n_note = 79,
     use_sdp=True,
     hps_data=None,
     synthesizer_requires_grad=True,
     **kwargs):
 
     super().__init__()
-    self.n_vocab = n_vocab
-    self.n_note = n_note
     self.spec_channels = spec_channels
     self.hidden_channels = hidden_channels
     self.filter_channels = filter_channels
@@ -391,7 +342,7 @@ class SynthesizerTrn(nn.Module):
     if n_speakers > 1:
       self.emb_g = nn.Embedding(n_speakers, gin_channels)
 
-  def forward(self, x, x_lengths, y, y_lengths, note, note_lengths, sid=None, target_ids=None):
+  def forward(self, x, x_lengths, y, y_lengths, sid=None, target_ids=None):
     x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
     #target sid 作成
     target_sids = self.make_random_target_sids(target_ids, sid)
