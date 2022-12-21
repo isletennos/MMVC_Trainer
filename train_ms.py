@@ -223,6 +223,9 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     scaler.scale(loss_disc_all).backward()
     scaler.unscale_(optim_d)
     grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
+    # 誤差逆伝播を実行後、計算グラフを削除
+    loss_disc_all_cpu = loss_disc_all.to('cpu')
+    del loss_disc_all
     scaler.step(optim_d)
 
     #HuBERT Loss
@@ -252,6 +255,11 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     scaler.scale(loss_gen_all).backward()
     scaler.unscale_(optim_g)
     grad_norm_g = commons.clip_grad_value_(net_g.parameters(), None)
+    # 誤差逆伝播を実行後、計算グラフを削除
+    loss_gen_all_cpu = loss_gen_all.to('cpu')
+    del loss_gen_all
+    torch.cuda.empty_cache()
+
     scaler.step(optim_g)
     scaler.update()
 
@@ -266,7 +274,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         logger.info(datetime.datetime.now(pytz.timezone('Asia/Tokyo')))
         logger.info([x.item() for x in losses] + [global_step, lr])
         
-        scalar_dict = {"loss/g/total": loss_gen_all, "loss/d/total": loss_disc_all, "learning_rate": lr, "grad_norm_d": grad_norm_d, "grad_norm_g": grad_norm_g}
+        scalar_dict = {"loss/g/total": loss_gen_all_cpu, "loss/d/total": loss_disc_all_cpu, "learning_rate": lr, "grad_norm_d": grad_norm_d, "grad_norm_g": grad_norm_g}
         scalar_dict.update({"loss/g/fm": loss_fm, "loss/g/mel": loss_mel, "loss/g/hubert": loss_hubert, "loss/g/kl": loss_kl})
 
         scalar_dict.update({"loss/g/{}".format(i): v for i, v in enumerate(losses_gen)})
@@ -282,14 +290,16 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
           global_step=global_step, 
           images=image_dict,
           scalars=scalar_dict)
-        eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger, hubert)
-        eval_loss_mel = float(eval_loss_dict["loss/g/mel"])
+        #eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger, hubert)
+        #eval_loss_mel = float(eval_loss_dict["loss/g/mel"])
         #eval_loss_vc = float(eval_loss_dict["loss/g/vc"])
         utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_latest_99999999.pth"))
         utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_latest_99999999.pth"))
 
       if global_step % hps.train.backup.interval == 0 and global_step != 0:
         if global_step % hps.train.backup.interval == 0 and global_step % hps.train.eval_interval == 0:
+          eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger, hubert)
+          eval_loss_mel = float(eval_loss_dict["loss/g/mel"])
           if hps.train.backup.g_only == False:
             utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
           utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, global_step)
