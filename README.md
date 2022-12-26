@@ -69,7 +69,7 @@ community(discord):https://discord.gg/PgspuDSTEc
 
 下記ボタンからColab上で自分のGoogle Drive上にインストールしてください。
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](http://colab.research.google.com/github/stealthinu/MMVC_Trainer/blob/v1.3.3.0/notebook/00_Clone_Repo.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](http://colab.research.google.com/github/isletennos/MMVC_Trainer/blob/v1.3.3.0/notebook/00_Clone_Repo.ipynb)
 
 その後、Google Driveを開いて「マイドライブ > MMVC_Trainer > notebook」の中の各ノートを開いて実行してください。
 
