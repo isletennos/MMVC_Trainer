@@ -164,7 +164,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         2) normalizes text and converts them to sequences of integers
         3) computes spectrograms from audio files.
     """
-    def __init__(self, audiopaths_sid_text, hparams, no_text=False, augmentation=False, augmentation_params=None, no_use_textfile = False):
+    def __init__(self, audiopaths_sid_text, hparams, no_text=False, augmentation=False, augmentation_params=None, no_use_textfile = False, disable_tqdm = False):
         if no_use_textfile:
             self.audiopaths_sid_text = list()
         else:
@@ -198,6 +198,8 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         self.add_blank = hparams.add_blank
         self.min_text_len = getattr(hparams, "min_text_len", 1)
         self.max_text_len = getattr(hparams, "max_text_len", 1000)
+        
+        self.disable_tqdm = disable_tqdm
 
         random.seed(1234)
         random.shuffle(self.audiopaths_sid_text)
@@ -215,7 +217,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         audiopaths_sid_text_new = []
         lengths = []
         
-        for audiopath, sid, text in tqdm.tqdm(self.audiopaths_sid_text):
+        for audiopath, sid, text in tqdm.tqdm(self.audiopaths_sid_text, disable=self.disable_tqdm):
             if self.min_text_len <= len(text) and len(text) <= self.max_text_len:
                 audiopaths_sid_text_new.append([audiopath, sid, text])
                 lengths.append(os.path.getsize(audiopath) // (2 * self.hop_length))
@@ -332,6 +334,8 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.audiopaths_sid_text)
 
+    def get_all_sid(self):
+        return list(set([int(r[1]) for r in self.audiopaths_sid_text]))
 
 class TextAudioSpeakerCollate():
     """ Zero-pads model inputs and targets

@@ -12,6 +12,7 @@ import monotonic_align
 from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from commons import init_weights, get_padding
+from mel_processing import spectrogram_torch_data
 
 '''
 class StochasticDurationPredictor(nn.Module):
@@ -416,6 +417,7 @@ class SynthesizerTrn(nn.Module):
     n_speakers=0,
     gin_channels=0,
     use_sdp=True,
+    hps_data=None,
     **kwargs):
 
     super().__init__()
@@ -436,8 +438,8 @@ class SynthesizerTrn(nn.Module):
     self.segment_size = segment_size
     self.n_speakers = n_speakers
     self.gin_channels = gin_channels
-
     self.use_sdp = use_sdp
+    self.hps_data = hps_data
 
     self.enc_p = TextEncoder(n_vocab,
         inter_channels,
@@ -454,7 +456,7 @@ class SynthesizerTrn(nn.Module):
     if n_speakers > 1:
       self.emb_g = nn.Embedding(n_speakers, gin_channels)
 
-  def forward(self, x, x_lengths, y, y_lengths, sid=None):
+  def forward(self, x, x_lengths, y, y_lengths, sid=None, target_ids=None):
 
     x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
     if self.n_speakers > 0:
@@ -483,7 +485,38 @@ class SynthesizerTrn(nn.Module):
 
     z_slice, ids_slice = commons.rand_slice_segments(z, y_lengths, self.segment_size)
     o = self.dec(z_slice, g=g)
-    return o, attn, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
+
+    # VC cycle
+    target_sids = self.make_random_target_sids(target_ids, sid)
+    target_g = self.emb_g(target_sids).unsqueeze(-1)
+    vc_spec = commons.slice_segments(y, ids_slice, self.segment_size)
+    vc_spec_length = torch.full_like(ids_slice, fill_value=self.segment_size)
+    vc_z, vc_m_q, vc_logs_q, vc_y_mask = self.enc_q(vc_spec, vc_spec_length, g=g)
+    vc_z_p = self.flow(vc_z, vc_y_mask, g=g)
+    vc_z_hat = self.flow(vc_z_p, vc_y_mask, g=target_g, reverse=True)
+    vc_o_hat = self.dec(vc_z_hat * vc_y_mask, g=target_g)
+    with torch.no_grad():
+      vc_spec_r = spectrogram_torch_data(vc_o_hat.squeeze(1), self.hps_data)
+      vc_spec_r_hat = torch.squeeze(vc_spec_r, 0)
+      vc_z_r, vc_mr_q, vc_logsr_q, vc_y_r_mask = self.enc_q(vc_spec_r_hat, vc_spec_length, g=target_g)
+      vc_z_r_p = self.flow(vc_z_r, vc_y_r_mask, g=target_g)
+      vc_z_r_hat = self.flow(vc_z_r_p, vc_y_r_mask, g=g, reverse=True)
+      vc_o_r_hat = self.dec(vc_z_r_hat * vc_y_r_mask, g=g)
+
+    return o, attn, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q), vc_o_r_hat
+
+  def make_random_target_sids(self, target_ids, sid):
+    # target_sids は target_ids をランダムで埋める
+    target_sids = torch.zeros_like(sid)
+    for i in range(len(target_sids)):
+      source_id = sid[i]
+      deleted_target_ids = target_ids[target_ids != source_id] # source_id と target_id が同じにならないよう sid と同じものを削除
+      if len(deleted_target_ids) >= 1:
+        target_sids[i] = deleted_target_ids[torch.randint(len(deleted_target_ids), (1,))]
+      else:
+        # target_id 候補が無いときは仕方ないので sid を使う
+        target_sids[i] = source_id
+    return target_sids
 
   def voice_conversion(self, y, y_lengths, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
