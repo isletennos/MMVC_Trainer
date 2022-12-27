@@ -31,22 +31,13 @@ class TextEncoder(nn.Module):
     self.kernel_size = kernel_size
     self.p_dropout = p_dropout
 
-    self.encoder = attentions.Encoder(
-      hidden_channels,
-      filter_channels,
-      n_heads,
-      n_layers,
-      kernel_size,
-      p_dropout)
     self.proj= nn.Conv1d(hidden_channels, out_channels * 2, 1)
     self.input_proj = nn.Conv1d(256, hidden_channels, 1)
 
   def forward(self, x, x_lengths):
     x = torch.transpose(x.half(), 1, -1) # [b, h, t]
-    x = self.input_proj(x)
-    x = x * math.sqrt(self.hidden_channels) # [b, t, h]
+    x = self.input_proj(x) # [b, h, t]
     x_mask = torch.unsqueeze(commons.sequence_mask(x_lengths, x.size(2)), 1).to(x.dtype)
-    x = self.encoder(x * x_mask, x_mask)
     stats = self.proj(x) * x_mask
 
     m, logs = torch.split(stats, self.out_channels, dim=1)
@@ -147,9 +138,6 @@ class Generator(torch.nn.Module):
         self.conv_post = Conv1d(ch, 1, 7, 1, padding=3, bias=False)
         self.ups.apply(init_weights)
 
-        if gin_channels != 0:
-            self.cond = nn.Conv1d(gin_channels, upsample_initial_channel, 1)
-
         if requires_grad == False:
           for param in self.parameters():
             param.requires_grad = False
@@ -157,8 +145,6 @@ class Generator(torch.nn.Module):
 
     def forward(self, x, g=None):
         x = self.conv_pre(x)
-        if g is not None:
-            x = x + self.cond(g)
 
         for i in range(self.num_upsamples):
             x = F.leaky_relu(x, modules.LRELU_SLOPE)

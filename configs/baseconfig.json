@@ -36,8 +36,8 @@
     "max_wav_value": 32768.0,
     "sampling_rate": 24000,
     "filter_length": 1024,
-    "hop_length": 256,
-    "win_length": 1024,
+    "hop_length": 128,
+    "win_length": 256,
     "n_mel_channels": 80,
     "mel_fmin": 0.0,
     "mel_fmax": null,
@@ -46,8 +46,8 @@
     "cleaned_text": false
   },
   "model": {
-    "inter_channels": 192,
-    "hidden_channels": 192,
+    "inter_channels": 256,
+    "hidden_channels": 256,
     "filter_channels": 768,
     "n_heads": 2,
     "n_layers": 2,
@@ -56,8 +56,8 @@
     "resblock": "1",
     "resblock_kernel_sizes": [
       3,
-      7,
-      11
+      5,
+      7
     ],
     "resblock_dilation_sizes": [
       [
@@ -78,20 +78,20 @@
     ],
     "upsample_rates": [
       8,
-      8,
+      4,
       2,
       2
     ],
     "upsample_initial_channel": 512,
     "upsample_kernel_sizes": [
       16,
-      16,
       8,
-      8
+      4,
+      4
     ],
     "n_layers_q": 3,
     "use_spectral_norm": false,
-    "n_flow": 12,
+    "n_flow": 8,
     "gin_channels": 128,
     "n_note": 79,
     "use_mel_train": false
