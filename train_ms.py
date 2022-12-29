@@ -144,8 +144,8 @@ def run(rank, n_gpus, hps):
   if hps.fine_flag:
       logger.info('Load model : '+str(hps.fine_model_g))
       logger.info('Load model : '+str(hps.fine_model_d))
-      _, _, _, global_step = utils.load_checkpoint(hps.fine_model_g, net_g, optim_g)
-      _, _, _, global_step = utils.load_checkpoint(hps.fine_model_d, net_d, optim_d)
+      _, _, _, global_step = utils.load_checkpoint(hps.fine_model_g, net_g, generator=True, optimizer = optim_g)
+      _, _, _, global_step = utils.load_checkpoint(hps.fine_model_d, net_d, generator=False, optimizer = optim_d)
       #lr reset
       optim_g.param_groups[0]['lr'] = hps.train.learning_rate
       optim_d.param_groups[0]['lr'] = hps.train.learning_rate
@@ -154,8 +154,8 @@ def run(rank, n_gpus, hps):
 
   else:
     try:
-      _, _, _, global_step = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "G_*[0-9].pth"), net_g, optim_g)
-      _, _, _, global_step = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "D_*[0-9].pth"), net_d, optim_d)
+      _, _, _, global_step = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "G_*[0-9].pth"), net_g, generator=True, optimizer = optim_g)
+      _, _, _, global_step = utils.load_checkpoint(utils.latest_checkpoint_path(hps.model_dir, "D_*[0-9].pth"), net_d, generator=False, optimizer = optim_d)
       epoch_str = global_step // len(train_loader) + 1
     except:
       epoch_str = 1
@@ -293,32 +293,32 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         #eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger, hubert)
         #eval_loss_mel = float(eval_loss_dict["loss/g/mel"])
         #eval_loss_vc = float(eval_loss_dict["loss/g/vc"])
-        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_latest_99999999.pth"))
-        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_latest_99999999.pth"))
+        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_latest_99999999.pth"), generator = True)
+        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_latest_99999999.pth"), generator = False)
 
       if global_step % hps.train.backup.interval == 0 and global_step != 0:
         if global_step % hps.train.backup.interval == 0 and global_step % hps.train.eval_interval == 0:
           eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger, hubert)
           eval_loss_mel = float(eval_loss_dict["loss/g/mel"])
           if hps.train.backup.g_only == False:
-            utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
+            utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)), generator = False)
           utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, global_step)
-          utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
+          utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)), generator = True)
         else:
           eval_loss_dict = evaluate(hps, net_g, eval_loader, writer_eval, logger, hubert)
           eval_loss_mel = float(eval_loss_dict["loss/g/mel"])
           #eval_loss_vc = float(eval_loss_dict["loss/g/vc"])
           if hps.train.backup.g_only == False:
-            utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)))
+            utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_{}.pth".format(global_step)), generator = False)
           utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, global_step)
-          utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)))
-          utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_latest_99999999.pth"))
-          utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_latest_99999999.pth"))
+          utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_{}.pth".format(global_step)), generator = True)
+          utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_latest_99999999.pth"), generator = True)
+          utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_latest_99999999.pth"), generator = False)
 
       if hps.train.best == True and eval_loss_mel is not None and eval_loss_mel < hps.best_loss_mel and global_step != 0:
         utils.save_vc_sample(hps, TextAudioSpeakerLoader, TextAudioSpeakerCollate, net_g, "best")
-        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_best.pth"))
-        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_best.pth"))
+        utils.save_checkpoint(net_g, optim_g, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "G_best.pth"), generator = True)
+        utils.save_checkpoint(net_d, optim_d, hps.train.learning_rate, global_step, os.path.join(hps.model_dir, "D_best.pth"), generator = False)
         utils.save_best_log(hps.best_log_path, global_step, eval_loss_mel, datetime.datetime.now(pytz.timezone('Asia/Tokyo')))
         hps.best_loss_mel = eval_loss_mel
 

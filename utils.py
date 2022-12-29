@@ -19,14 +19,24 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logger = logging
 
 
-def load_checkpoint(checkpoint_path, model, optimizer=None):
+def load_checkpoint(checkpoint_path, model, generator, optimizer=None):
   assert os.path.isfile(checkpoint_path), f"No such file or directory: {checkpoint_path}"
   checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
   iteration = checkpoint_dict['iteration']
   learning_rate = checkpoint_dict['learning_rate']
   if optimizer is not None:
     optimizer.load_state_dict(checkpoint_dict['optimizer'])
-  saved_state_dict = checkpoint_dict['model']
+
+  if generator:
+    saved_state_dict = {
+        **checkpoint_dict['pe'],
+        **checkpoint_dict['flow'],
+        **checkpoint_dict['text_enc'], 
+        **checkpoint_dict['dec'],
+        **checkpoint_dict['emb_g']
+        }
+  else:
+    saved_state_dict = checkpoint_dict['model']
   if hasattr(model, 'module'):
     state_dict = model.module.state_dict()
   else:
@@ -47,17 +57,55 @@ def load_checkpoint(checkpoint_path, model, optimizer=None):
   return model, optimizer, learning_rate, iteration
 
 
-def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path):
+def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path, generator):
   logger.info("Saving model and optimizer state at iteration {} to {}".format(
     iteration, checkpoint_path))
   if hasattr(model, 'module'):
     state_dict = model.module.state_dict()
   else:
     state_dict = model.state_dict()
-  torch.save({'model': state_dict,
-              'iteration': iteration,
-              'optimizer': optimizer.state_dict(),
-              'learning_rate': learning_rate}, checkpoint_path)
+  
+  #PEの重みのkeyを検索 & PEの重みを別のdictに
+  search_string = "enc_q"
+  search_keys = [key for key in state_dict.keys() if search_string in key]
+  state_dict_pe = {}
+  state_dict_pe.update({key: state_dict[key] for key in search_keys if key in state_dict})
+  #Flowの重みのkeyを検索 & Flowの重みを別のdictに
+  search_string = "flow"
+  search_keys = [key for key in state_dict.keys() if search_string in key]
+  state_dict_flow = {}
+  state_dict_flow.update({key: state_dict[key] for key in search_keys if key in state_dict})
+  #text_encの重みのkeyを検索 & text_encの重みを別のdictに
+  search_string = "enc_p"
+  search_keys = [key for key in state_dict.keys() if search_string in key]
+  state_dict_enc_p = {}
+  state_dict_enc_p.update({key: state_dict[key] for key in search_keys if key in state_dict})
+  #decの重みのkeyを検索 & decの重みを別のdictに
+  search_string = "dec"
+  search_keys = [key for key in state_dict.keys() if search_string in key]
+  state_dict_dec = {}
+  state_dict_dec.update({key: state_dict[key] for key in search_keys if key in state_dict})
+  #emb_g(話者埋め込み)の重みのkeyを検索 & emb_gの重みを別のdictに
+  search_string = "emb_g"
+  search_keys = [key for key in state_dict.keys() if search_string in key]
+  state_dict_emb_g = {}
+  state_dict_emb_g.update({key: state_dict[key] for key in search_keys if key in state_dict})
+
+  if generator:
+    torch.save({'pe': state_dict_pe,
+                'flow': state_dict_flow,
+                'text_enc': state_dict_enc_p,
+                'dec': state_dict_dec,
+                'emb_g': state_dict_emb_g,
+                'iteration': iteration,
+                'optimizer': optimizer.state_dict(),
+                'learning_rate': learning_rate}, 
+                checkpoint_path)
+  else:
+    torch.save({'model': state_dict,
+                'iteration': iteration,
+                'optimizer': optimizer.state_dict(),
+                'learning_rate': learning_rate}, checkpoint_path)
 
 
 def save_vc_sample(hps, loader, collate, generator, name):
