@@ -74,7 +74,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         text = self.get_text(text)
         #DAは一旦削除、再導入する場合は全部最新になっているか確認すること
         #DA、音量とピッチのみ機能再開、話速は使わないこと
-        spec, wav, _ = self.get_audio(audiopath)
+        spec, wav = self.get_audio(audiopath)
         sid = self.get_sid(sid)
         return (text, spec, wav, sid)
         
@@ -92,7 +92,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         audio_norm = self.get_normalized_audio(audio, self.max_wav_value)
 
         if self.augmentation:
-            audio_augmented, execute_flag = self.add_augmentation(audio_norm, sampling_rate)
+            audio_augmented = self.add_augmentation(audio_norm, sampling_rate)
             # ノーマライズ後のaugmentationとnoise付加で範囲外になったところを削る
             # -1～1に丸める
             audio_augmented = torch.clamp(audio_augmented, -1, 1) 
@@ -107,21 +107,18 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
                 self.sampling_rate, self.hop_length, self.win_length,
                 center=False)
             spec = torch.squeeze(spec, 0)
-        return spec, audio_norm, execute_flag
+        return spec, audio_norm
 
     def add_augmentation(self, audio, sampling_rate):
         gain_in_db = 0.0
         if random.random() <= self.gain_p:
             gain_in_db = random.uniform(self.min_gain_in_db, self.max_gain_in_db)
-            execute_flag = True
         time_stretch_rate = 1.0
         if random.random() <= self.time_stretch_p:
             time_stretch_rate = random.uniform(self.min_rate, self.max_rate)
-            execute_flag = True
         pitch_shift_semitones = 0
         if random.random() <= self.pitch_shift_p:
             pitch_shift_semitones = random.uniform(self.min_semitones, self.max_semitones) * 100 # 1/100 semitone 単位指定のため
-            execute_flag = True
         augmentation_effects = [
             ["gain",  f"{gain_in_db}"],
             ["tempo", f"{time_stretch_rate}"],
@@ -129,7 +126,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             ["rate",  f"{sampling_rate}"]
         ]
         audio_augmented, _ = torchaudio.sox_effects.apply_effects_tensor(audio, sampling_rate, augmentation_effects)
-        return audio_augmented, execute_flag
+        return audio_augmented
 
     def get_normalized_audio(self, audio, max_wav_value):
         audio_norm = audio / max_wav_value

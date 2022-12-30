@@ -119,11 +119,24 @@ def run(rank, n_gpus, hps):
   else:
       channels = hps.data.filter_length // 2 + 1
   net_g = SynthesizerTrn(
-      channels,
-      hps.train.segment_size // hps.data.hop_length,
-      n_speakers=hps.data.n_speakers,
-      hps_data=hps.data,
-      **hps.model).cuda(rank)
+      spec_channels = channels,
+      segment_size = hps.train.segment_size // hps.data.hop_length,
+      inter_channels = hps.model.inter_channels,
+      hidden_channels = hps.model.hidden_channels,
+      resblock = hps.model.resblock,
+      resblock_kernel_sizes = hps.model.resblock_kernel_sizes,
+      resblock_dilation_sizes = hps.model.resblock_dilation_sizes,
+      upsample_rates = hps.model.upsample_rates,
+      upsample_initial_channel = hps.model.upsample_initial_channel,
+      upsample_kernel_sizes = hps.model.upsample_kernel_sizes,
+      n_flow = hps.model.n_flow,
+      n_speakers = hps.data.n_speakers,
+      gin_channels = hps.model.gin_channels,
+      requires_grad_pe = hps.requires_grad.pe,
+      requires_grad_flow = hps.requires_grad.flow,
+      requires_grad_text_enc = hps.requires_grad.text_enc,
+      requires_grad_dec = hps.requires_grad.dec
+      ).cuda(rank)
   net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm).cuda(rank)
   optim_g = torch.optim.AdamW(
       net_g.parameters(), 

@@ -17,29 +17,20 @@ class TextEncoder(nn.Module):
   def __init__(self,
       out_channels,
       hidden_channels,
-      filter_channels,
-      n_heads,
-      n_layers,
-      kernel_size,
-      p_dropout):
+      requires_grad=True):
     super().__init__()
     self.out_channels = out_channels
     self.hidden_channels = hidden_channels
-    self.filter_channels = filter_channels
-    self.n_heads = n_heads
-    self.n_layers = n_layers
-    self.kernel_size = kernel_size
-    self.p_dropout = p_dropout
-
     self.proj= nn.Conv1d(hidden_channels, out_channels * 2, 1)
-    self.input_proj = nn.Conv1d(256, hidden_channels, 1)
+    #パラメータを学習しない
+    if requires_grad == False:
+      for param in self.parameters():
+        param.requires_grad = False
 
   def forward(self, x, x_lengths):
     x = torch.transpose(x.half(), 1, -1) # [b, h, t]
-    x = self.input_proj(x) # [b, h, t]
     x_mask = torch.unsqueeze(commons.sequence_mask(x_lengths, x.size(2)), 1).to(x.dtype)
     stats = self.proj(x) * x_mask
-
     m, logs = torch.split(stats, self.out_channels, dim=1)
     return x, m, logs, x_mask
 
@@ -51,7 +42,8 @@ class ResidualCouplingBlock(nn.Module):
       dilation_rate,
       n_layers,
       n_flows=4,
-      gin_channels=0):
+      gin_channels=0,
+      requires_grad=True):
     super().__init__()
     self.channels = channels
     self.hidden_channels = hidden_channels
@@ -65,6 +57,11 @@ class ResidualCouplingBlock(nn.Module):
     for i in range(n_flows):
       self.flows.append(modules.ResidualCouplingLayer(channels, hidden_channels, kernel_size, dilation_rate, n_layers, gin_channels=gin_channels, mean_only=True))
       self.flows.append(modules.Flip())
+
+    #パラメータを学習しない
+    if requires_grad == False:
+      for param in self.parameters():
+        param.requires_grad = False
 
   def forward(self, x, x_mask, g=None, reverse=False):
     if not reverse:
@@ -116,7 +113,15 @@ class PosteriorEncoder(nn.Module):
 
 
 class Generator(torch.nn.Module):
-    def __init__(self, initial_channel, resblock, resblock_kernel_sizes, resblock_dilation_sizes, upsample_rates, upsample_initial_channel, upsample_kernel_sizes, gin_channels=0, requires_grad=True):
+    def __init__(self, 
+          initial_channel, 
+          resblock, 
+          resblock_kernel_sizes, 
+          resblock_dilation_sizes, 
+          upsample_rates, 
+          upsample_initial_channel, 
+          upsample_kernel_sizes, 
+          requires_grad=True):
         super(Generator, self).__init__()
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
@@ -272,11 +277,6 @@ class SynthesizerTrn(nn.Module):
     segment_size,
     inter_channels,
     hidden_channels,
-    filter_channels,
-    n_heads,
-    n_layers,
-    kernel_size,
-    p_dropout,
     resblock, 
     resblock_kernel_sizes, 
     resblock_dilation_sizes, 
@@ -286,19 +286,15 @@ class SynthesizerTrn(nn.Module):
     n_flow,
     n_speakers=0,
     gin_channels=0,
-    use_sdp=True,
-    hps_data=None,
-    synthesizer_requires_grad=True,
-    **kwargs):
+    requires_grad_pe=True,
+    requires_grad_flow=True,
+    requires_grad_text_enc=True,
+    requires_grad_dec=True,
+    requires_grad_emb_g=True,):
 
     super().__init__()
     self.spec_channels = spec_channels
     self.hidden_channels = hidden_channels
-    self.filter_channels = filter_channels
-    self.n_heads = n_heads
-    self.n_layers = n_layers
-    self.kernel_size = kernel_size
-    self.p_dropout = p_dropout
     self.resblock = resblock
     self.resblock_kernel_sizes = resblock_kernel_sizes
     self.resblock_dilation_sizes = resblock_dilation_sizes
@@ -308,22 +304,42 @@ class SynthesizerTrn(nn.Module):
     self.segment_size = segment_size
     self.n_speakers = n_speakers
     self.gin_channels = gin_channels
-    self.use_sdp = use_sdp
-    self.hps_data = hps_data
-    self.synthesizer_requires_grad = synthesizer_requires_grad
+    self.requires_grad_pe = requires_grad_pe
+    self.requires_grad_flow = requires_grad_flow
+    self.requires_grad_text_enc = requires_grad_text_enc
+    self.requires_grad_dec = requires_grad_dec
 
+    self.enc_q = PosteriorEncoder(
+        spec_channels, 
+        inter_channels, 
+        hidden_channels, 
+        5, 
+        1, 
+        16, 
+        gin_channels=gin_channels, 
+        requires_grad=requires_grad_pe)
     self.enc_p = TextEncoder(
         inter_channels,
         hidden_channels,
-        filter_channels,
-        n_heads,
-        n_layers,
-        kernel_size,
-        p_dropout)
-
-    self.dec = Generator(inter_channels, resblock, resblock_kernel_sizes, resblock_dilation_sizes, upsample_rates, upsample_initial_channel, upsample_kernel_sizes, gin_channels=gin_channels, requires_grad=synthesizer_requires_grad)
-    self.enc_q = PosteriorEncoder(spec_channels, inter_channels, hidden_channels, 5, 1, 16, gin_channels=gin_channels, requires_grad=synthesizer_requires_grad)
-    self.flow = ResidualCouplingBlock(inter_channels, hidden_channels, 5, 1, 4, n_flows=n_flow, gin_channels=gin_channels)
+        requires_grad=requires_grad_text_enc)
+    self.dec = Generator(
+        inter_channels, 
+        resblock, 
+        resblock_kernel_sizes, 
+        resblock_dilation_sizes, 
+        upsample_rates, 
+        upsample_initial_channel, 
+        upsample_kernel_sizes,  
+        requires_grad=requires_grad_dec)
+    self.flow = ResidualCouplingBlock(
+        inter_channels, 
+        hidden_channels, 
+        5, 
+        1, 
+        4, 
+        n_flows=n_flow, 
+        gin_channels=gin_channels,
+        requires_grad=requires_grad_flow)
 
     if n_speakers > 1:
       self.emb_g = nn.Embedding(n_speakers, gin_channels)
@@ -361,26 +377,6 @@ class SynthesizerTrn(nn.Module):
     #Dec
     o = self.dec(z_slice, g=g)
     tgt_o = self.dec(tgt_z_slice, g=tgt_g)
-
-    # VC cycle
-    # すみません、一旦コメントアウトします
-    """
-    target_sids = self.make_random_target_sids(target_ids, sid)
-    target_g = self.emb_g(target_sids).unsqueeze(-1)
-    vc_spec = commons.slice_segments(y, ids_slice, self.segment_size)
-    vc_spec_length = torch.full_like(ids_slice, fill_value=self.segment_size)
-    vc_z, vc_m_q, vc_logs_q, vc_y_mask = self.enc_q(vc_spec, vc_spec_length, g=g)
-    vc_z_p = self.flow(vc_z, vc_y_mask, g=g)
-    vc_z_hat = self.flow(vc_z_p, vc_y_mask, g=target_g, reverse=True)
-    vc_o_hat = self.dec(vc_z_hat * vc_y_mask, g=target_g)
-    with torch.no_grad():
-      vc_spec_r = spectrogram_torch_data(vc_o_hat.squeeze(1), self.hps_data)
-      vc_spec_r_hat = torch.squeeze(vc_spec_r, 0)
-      vc_z_r, vc_mr_q, vc_logsr_q, vc_y_r_mask = self.enc_q(vc_spec_r_hat, vc_spec_length, g=target_g)
-      vc_z_r_p = self.flow(vc_z_r, vc_y_r_mask, g=target_g)
-      vc_z_r_hat = self.flow(vc_z_r_p, vc_y_r_mask, g=g, reverse=True)
-      vc_o_r_hat = self.dec(vc_z_r_hat * vc_y_r_mask, g=g)
-    """
 
     return (o, tgt_o), ids_slice, x_mask, y_mask, ((z, z_p, m_p), logs_p, m_q, logs_q)
 
