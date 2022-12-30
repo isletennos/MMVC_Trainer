@@ -42,10 +42,6 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             self.pitch_shift_p = augmentation_params.pitch_shift_p
             self.min_semitones = augmentation_params.min_semitones
             self.max_semitones = augmentation_params.max_semitones
-
-        self.add_blank = hparams.add_blank
-        self.min_text_len = getattr(hparams, "min_text_len", 1)
-        self.max_text_len = getattr(hparams, "max_text_len", 1000)
         
         self.disable_tqdm = disable_tqdm
 
@@ -77,7 +73,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         audiopath, sid, text = audiopath_sid_text[0], audiopath_sid_text[1], audiopath_sid_text[2]
         text = self.get_text(text)
         #DAは一旦削除、再導入する場合は全部最新になっているか確認すること
-        #DA、音量とピッチのみ機能再開
+        #DA、音量とピッチのみ機能再開、話速は使わないこと
         spec, wav, _ = self.get_audio(audiopath)
         sid = self.get_sid(sid)
         return (text, spec, wav, sid)

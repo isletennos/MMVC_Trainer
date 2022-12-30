@@ -41,7 +41,6 @@
     "n_mel_channels": 80,
     "mel_fmin": 0.0,
     "mel_fmax": null,
-    "add_blank": true,
     "n_speakers": 127,
     "cleaned_text": false
   },
@@ -108,17 +107,13 @@
   "augmentation": {
     "enable": false,
     "gain_p": 0.5,
-    "min_gain_in_db": -10,
-    "max_gain_in_db": 10,
-    "time_stretch_p": 0.5,
+    "min_gain_in_db": -3,
+    "max_gain_in_db": 6,
+    "time_stretch_p": 0.0,
     "min_rate": 0.75,
     "max_rate": 1.25,
-    "pitch_shift_p": 0.0,
+    "pitch_shift_p": 0.25,
     "min_semitones": -4.0,
-    "max_semitones": 4.0,
-    "add_gaussian_noise_p": 0.0,
-    "min_amplitude": 0.001,
-    "max_amplitude": 0.04,
-    "frequency_mask_p": 0.0
+    "max_semitones": 4.0
   }
 }
