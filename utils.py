@@ -63,7 +63,8 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
 def save_vc_sample(hps, loader, collate, generator, name):
   if not hasattr(hps.others, "input_filename"):
     return
-
+  if not os.path.isfile(hps.others.input_filename):
+    return
   input_filename = hps.others.input_filename
   source_id = hps.others.source_id
   target_ids = hps.others.target_id
