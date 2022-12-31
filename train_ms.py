@@ -89,7 +89,7 @@ def run(rank, n_gpus, hps):
 
   if hasattr(hps.others, "input_filename"):
     if not os.path.isfile(hps.others.input_filename):
-      print("[INFO]The correct path is not set to \"input_filename\" in \"others\" of the config file. Skip creation of vc_sample.")
+      logger.("The correct path is not set to \"input_filename\" in \"others\" of the config file. Skip creation of vc_sample.")
     assert hasattr(hps.others, "source_id") and hasattr(hps.others, "target_id"), "VC source_id and target_id are required."
 
   dist.init_process_group(backend=backend_type, init_method='env://', world_size=n_gpus, rank=rank)
