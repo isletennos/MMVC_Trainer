@@ -66,7 +66,12 @@ community(discord):https://discord.gg/2MGysH3QpD
 ・Google アカウント
 
 ## Install
-このリポジトリをダウンロードして、展開、展開したディレクトリをGoogle Drive上にアップロードしてください。
+
+下記ボタンからColab上で自分のGoogle Drive上にインストールしてください。
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](http://colab.research.google.com/github/isletennos/MMVC_Trainer/blob/v1.3.3.0/notebook/00_Clone_Repo.ipynb)
+
+その後、Google Driveを開いて「マイドライブ > MMVC_Trainer > notebook」の中の各ノートを開いて実行してください。
 
 ## Usage
 ### チュートリアル : ずんだもんになる
@@ -74,13 +79,16 @@ community(discord):https://discord.gg/2MGysH3QpD
 そのため、MMVCの利用規約とは別に[[ずんだもん 利用規約](https://zunko.jp/guideline.html)]を遵守する必要があります。
 #### Ph1. 自分の音声の録音と音声データの配置
 1. 自分の声の音声データを録音します。  
+    - notebookディレクトリにある「00_Rec_Voice.ipynb」から自分の音声を録音してください。
+    - もしくは、自分のPCで録音してGoogle Drive上に配置してください。  
 JVSコーパスやITAコーパス等を台本にし、100文程度読み上げます。  
 また、録音した音声は**24000Hz 16bit 1ch**である必要があります。  
 ※MMVC用にテキストを分割したITAコーパスです。ご利用ください。  
 https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing  
 
 2. dataset/textful/000_myvoice に音声データとテキストデータを配置します。  
-最終的に下記のようなディレクトリ構成になります。  
+    - 00_Rec_Voice.ipynbを利用して録音した場合はこのように配置されていますのでそのままで大丈夫です。  
+    - 最終的に下記のようなディレクトリ構成になるようにファイルを配置してください。  
 ```
 dataset
 ├── textful
@@ -111,9 +119,12 @@ dataset
 ```
 
 #### Ph2. モデルの学習方法
-1. 下記リンクより、「G_180000.pth」「D_180000.pth」をダウンロード。  
+1. 事前学習済みデータを配置します。  
+    - 00_Clone_Repo.ipynbを使ってインストールした場合は既に事前学習済みデータも配置済みなのでそのままで大丈夫です。  
+    - 00_Clone_Repo.ipynbを利用しなかった場合や「fine_model」ディレクトリに下記ファイルが存在しなかった場合、以下の手順でファイルを配置してください。
+        1. 下記リンクより、「G_180000.pth」「D_180000.pth」をダウンロード。  
 https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sharing
-2. 「G_180000.pth」「D_180000.pth」をfine_modelに配置します。**(良く忘れるポイントなので要注意！)**  
+        2. 「G_180000.pth」「D_180000.pth」を「fine_model」ディレクトリに配置します。**(良く忘れるポイントなので要注意！)**  
 3. notebookディレクトリにある「Create_Configfile_zundamon.ipynb」をGoogle Colab 上で実行、学習に必要なconfigファイルを作成します  
 4. configsに作成されたtrain_config_zundamon.jsonの  
   
