@@ -252,17 +252,15 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     with autocast(enabled=hps.train.fp16_run):
       # Generator
       y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
+      y_d_tgt_hat_g = net_d(y, tgt_y_hat, False)
       with autocast(enabled=False):
         loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
         loss_hubert = F.l1_loss(units, tgt_units) * hps.train.l1_hubert
-        #dispose_length = y_mel.size(2) // 4
-        #disposed_y_mel = y_mel[:, :, dispose_length:-dispose_length]
-        #disposed_vc_o_r_hat_mel = vc_o_r_hat_mel[:, :, dispose_length:-dispose_length]
-        #loss_vc = F.l1_loss(disposed_y_mel, disposed_vc_o_r_hat_mel) * hps.train.c_mel # melを真ん中の半分だけ使うようにする
         loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
         loss_fm = feature_loss(fmap_r, fmap_g)
         loss_gen, losses_gen = generator_loss(y_d_hat_g)
-        loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl + loss_hubert
+        loss_tgt_gen, losses_tgt_gen = generator_loss(y_d_tgt_hat_g)
+        loss_gen_all = loss_gen + loss_tgt_gen + loss_fm + loss_mel + loss_kl + loss_hubert
 
     optim_g.zero_grad()
     scaler.scale(loss_gen_all).backward()
@@ -280,7 +278,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
       eval_loss_mel = None
       if global_step % hps.train.eval_interval == 0 and global_step != 0:
         lr = optim_g.param_groups[0]['lr']
-        losses = [loss_disc, loss_gen, loss_fm, loss_mel, loss_hubert, loss_kl]
+        losses = [loss_disc, loss_gen, loss_tgt_gen, loss_fm, loss_mel, loss_hubert, loss_kl]
         logger.info('Train Epoch: {} [{:.0f}%]'.format(
           epoch,
           100. * batch_idx / len(train_loader)))
