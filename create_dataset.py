@@ -7,6 +7,8 @@ import numpy as np
 import csv
 import torch, torchaudio
 import requests
+import copy
+from scipy.interpolate import interp1d
 
 #Global
 NUM_MAX_SID = 127
@@ -15,6 +17,84 @@ NUM_TRAINED_SPEAKER = 1
 ZUNDAMON_SID = 101
 MY_SID = 0
 VAL_PER = 20
+
+#F0 param
+FRAME_LENGTH = 1024
+WIN_LENGTH = 512
+HOP_LENGTH = 256
+
+#librosa pyin を使ってf0を推定する
+def get_f0(wav_path, frame_length=FRAME_LENGTH, win_length=WIN_LENGTH, hop_length=HOP_LENGTH):
+    y, sr = librosa.load(wav_path, 24000)
+    pad_width=[int((frame_length-hop_length)/2),int((frame_length-hop_length)/2)]
+    y = np.pad(y, pad_width, 'reflect')
+    #Get f0
+    #https://librosa.org/doc/main/generated/librosa.pyin.html
+    f0, _, _ = librosa.pyin(y, sr = sr, frame_length=frame_length, win_length=win_length, hop_length=hop_length, fmin = librosa.note_to_hz('C2'), fmax= librosa.note_to_hz('C7'), center=False, pad_mode='reflect')
+    f0 = np.nan_to_num(f0)
+    return f0
+
+#f0からcf0を推定する
+def convert_continuos_f0(f0):
+    """Convert F0 to continuous F0
+
+    Args:
+        f0 (ndarray): original f0 sequence with the shape (T)
+
+    Return:
+        (ndarray): continuous f0 with the shape (T)
+
+    """
+    # get uv information as binary
+    uv = np.float32(f0 != 0)
+    # get start and end of f0
+    if (f0 == 0).all():
+        return uv, f0, False
+    start_f0 = f0[f0 != 0][0]
+    end_f0 = f0[f0 != 0][-1]
+    # padding start and end of f0 sequence
+    cf0 = copy.deepcopy(f0)
+    start_idx = np.where(cf0 == start_f0)[0][0]
+    end_idx = np.where(cf0 == end_f0)[0][-1]
+    cf0[:start_idx] = start_f0
+    cf0[end_idx:] = end_f0
+    # get non-zero frame index
+    nz_frames = np.where(cf0 != 0)[0]
+    # perform linear interpolation
+    f = interp1d(nz_frames, cf0[nz_frames])
+    cf0 = f(np.arange(0, cf0.shape[0]))
+
+    return uv, cf0, True
+
+def create_cf0(wav_path, d_):
+    filename = os.path.basename(wav_path)
+    d = os.path.basename(d_)
+    save_path = "cF0/{}/{}".format(d , filename[:-4])
+    load_path = "F0/{}/{}".format(d , filename[:-4] + ".npy")
+    print(load_path)
+    f0 = np.load(load_path)
+    os.makedirs("cF0", exist_ok=True)
+    os.makedirs("cF0/{}".format(d), exist_ok=True)
+    if os.path.isfile(save_path+ ".npy"):
+        pass
+    else:
+        _, cf0, _ = convert_continuos_f0(f0)
+        np.save(save_path, cf0)
+
+    return save_path + ".npy" , np.mean(cf0)
+
+def create_f0(wav_path, d_):
+    filename = os.path.basename(wav_path)
+    d = os.path.basename(d_)
+    save_path = "F0/{}/{}".format(d , filename[:-4])
+    os.makedirs("F0", exist_ok=True)
+    os.makedirs("F0/{}".format(d), exist_ok=True)
+    if os.path.isfile(save_path+ ".npy"):
+        pass
+    else:
+        f0 = get_f0(wav_path)
+        np.save(save_path, f0)
+    return save_path + ".npy"
 
 #textを音素に
 def mozi2phone(hubert, wav_path, d_):
@@ -33,7 +113,18 @@ def mozi2phone(hubert, wav_path, d_):
 #filelistの1行を作成する
 def create_data_line(wav, speaker_id, d, hubert):
     units = mozi2phone(hubert, wav, d)
-    one_line = wav + "|"+ str(speaker_id) + "|"+ units + "\n"
+    f0 = create_f0(wav, d)
+    cf0, cf0_mean = create_cf0(wav, d)
+    #wav_path | sid | unit | f0 | cf0 | cf0_mean
+    one_line = "{}|{}|{}|{}|{}|{}".format(
+        wav,
+        str(speaker_id),
+        units,
+        f0,
+        cf0,
+        cf0_mean
+    )
+    one_line = wav + "|"+ str(speaker_id) + "|"+ units + "|"+ f0 + "|"+ cf0 + "\n"
     print(one_line)
     return one_line
 
