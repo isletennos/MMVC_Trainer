@@ -76,7 +76,7 @@ def create_cf0(wav_path, d_):
     os.makedirs("cF0", exist_ok=True)
     os.makedirs("cF0/{}".format(d), exist_ok=True)
     if os.path.isfile(save_path+ ".npy"):
-        pass
+        cf0 = np.load(save_path+ ".npy")
     else:
         _, cf0, _ = convert_continuos_f0(f0)
         np.save(save_path, cf0)
@@ -116,15 +116,14 @@ def create_data_line(wav, speaker_id, d, hubert):
     f0 = create_f0(wav, d)
     cf0, cf0_mean = create_cf0(wav, d)
     #wav_path | sid | unit | f0 | cf0 | cf0_mean
-    one_line = "{}|{}|{}|{}|{}|{}".format(
+    one_line = "{}|{}|{}|{}|{}|{}\n".format(
         wav,
         str(speaker_id),
         units,
         f0,
         cf0,
-        cf0_mean
+        str(cf0_mean)
     )
-    one_line = wav + "|"+ str(speaker_id) + "|"+ units + "|"+ f0 + "|"+ cf0 + "\n"
     print(one_line)
     return one_line
 

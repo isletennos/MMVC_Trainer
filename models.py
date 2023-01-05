@@ -350,7 +350,7 @@ class SynthesizerTrn(nn.Module):
     if n_speakers > 1:
       self.emb_g = nn.Embedding(n_speakers, gin_channels)
 
-  def forward(self, x, x_lengths, y, y_lengths, sid=None, target_ids=None):
+  def forward(self, x, x_lengths, y, y_lengths, sin, d, slice_id, sid=None, target_ids=None):
     x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
     #target sid 作成
     target_sids = self.make_random_target_sids(target_ids, sid)
@@ -377,14 +377,14 @@ class SynthesizerTrn(nn.Module):
     logs_p = torch.matmul(logs_p, liner_alignment)
 
     #slice
-    z_slice, ids_slice = commons.rand_slice_segments(z, y_lengths, self.segment_size)
+    z_slice = commons.slice_segments(z, slice_id, self.segment_size)
     #targetのslice
-    tgt_z_slice = commons.slice_segments(tgt_z, ids_slice, self.segment_size)
+    tgt_z_slice = commons.slice_segments(tgt_z, slice_id, self.segment_size)
     #Dec
-    o = self.dec(z_slice, g=g)
-    tgt_o = self.dec(tgt_z_slice, g=tgt_g)
+    o = self.dec(sin, z_slice, d, sid=g)
+    tgt_o = self.dec(sin, tgt_z_slice, d, sid=tgt_g)
 
-    return (o, tgt_o), ids_slice, x_mask, y_mask, ((z, z_p, m_p), logs_p, m_q, logs_q)
+    return (o, tgt_o), slice_id, x_mask, y_mask, ((z, z_p, m_p), logs_p, m_q, logs_q)
 
   def make_random_target_sids(self, target_ids, sid):
     # target_sids は target_ids をランダムで埋める

@@ -22,6 +22,7 @@
     "warmup_epochs": 0,
     "c_mel": 45,
     "c_kl": 1.0,
+    "reg": 1.0,
     "l1_hubert": 22.5
   },
   "data": {
@@ -38,6 +39,19 @@
     "n_mel_channels": 80,
     "mel_fmin": 0.0,
     "mel_fmax": null,
+    "df_f0_type":"cf0",
+    "dense_factors": [
+      0.5,
+      1,
+      4,
+      8
+    ],
+    "sine_amp":0.1,
+    "noise_amp":0.003,
+    "sine_f0_type":"cf0",
+    "signal_types": [
+      "sine"
+    ],
     "n_speakers": 127
   },
   "model": {
