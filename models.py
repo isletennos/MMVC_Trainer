@@ -12,6 +12,7 @@ from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from commons import init_weights, get_padding
 from mel_processing import spectrogram_torch_data
+from sifigan.generator import SiFiGANGenerator
 
 class TextEncoder(nn.Module):
   def __init__(self,
@@ -275,7 +276,6 @@ class MultiPeriodDiscriminator(torch.nn.Module):
             return y_d_gs            
 
 
-
 class SynthesizerTrn(nn.Module):
   """
   Synthesizer for Training
@@ -286,13 +286,12 @@ class SynthesizerTrn(nn.Module):
     segment_size,
     inter_channels,
     hidden_channels,
-    resblock, 
-    resblock_kernel_sizes, 
-    resblock_dilation_sizes, 
     upsample_rates, 
     upsample_initial_channel, 
     upsample_kernel_sizes,
     n_flow,
+    dec_out_channels=1,
+    dec_kernel_size=7,
     n_speakers=0,
     gin_channels=0,
     requires_grad_pe=True,
@@ -304,13 +303,12 @@ class SynthesizerTrn(nn.Module):
     super().__init__()
     self.spec_channels = spec_channels
     self.hidden_channels = hidden_channels
-    self.resblock = resblock
-    self.resblock_kernel_sizes = resblock_kernel_sizes
-    self.resblock_dilation_sizes = resblock_dilation_sizes
     self.upsample_rates = upsample_rates
     self.upsample_initial_channel = upsample_initial_channel
     self.upsample_kernel_sizes = upsample_kernel_sizes
     self.segment_size = segment_size
+    self.dec_out_channels = dec_out_channels
+    self.dec_kernel_size = dec_kernel_size
     self.n_speakers = n_speakers
     self.gin_channels = gin_channels
     self.requires_grad_pe = requires_grad_pe
@@ -331,14 +329,13 @@ class SynthesizerTrn(nn.Module):
         inter_channels,
         hidden_channels,
         requires_grad=requires_grad_text_enc)
-    self.dec = Generator(
-        inter_channels, 
-        resblock, 
-        resblock_kernel_sizes, 
-        resblock_dilation_sizes, 
-        upsample_rates, 
-        upsample_initial_channel, 
-        upsample_kernel_sizes,  
+    self.dec = SiFiGANGenerator(
+        in_channels=inter_channels,
+        out_channels=dec_out_channels,
+        channels=upsample_initial_channel,
+        kernel_size=dec_kernel_size,
+        upsample_scales=upsample_rates,
+        upsample_kernel_sizes=upsample_kernel_sizes,
         requires_grad=requires_grad_dec)
     self.flow = ResidualCouplingBlock(
         inter_channels, 

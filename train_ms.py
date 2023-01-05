@@ -41,6 +41,7 @@ from losses import (
   kl_loss
 )
 from mel_processing import mel_spectrogram_torch_data, spec_to_mel_torch_data
+from sifigan.losses import ResidualLoss
 
 torch.backends.cudnn.benchmark = True
 global_step = 0
@@ -93,10 +94,11 @@ def run(rank, n_gpus, hps):
   torch.manual_seed(hps.train.seed)
   torch.cuda.set_device(rank)
   train_dataset = TextAudioSpeakerLoader(hps.data.training_files, hps.data, augmentation=hps.augmentation.enable, augmentation_params=hps.augmentation)
+  #[96,375,750,1125,1500,1875,2250,2625,3000]
   train_sampler = DistributedBucketSampler(
       train_dataset,
       hps.train.batch_size,
-      [96,375,750,1125,1500,1875,2250,2625,3000],
+      [48,187,375,562,750,937,1125,1312,1500],
       num_replicas=n_gpus,
       rank=rank,
       shuffle=True)
@@ -108,7 +110,7 @@ def run(rank, n_gpus, hps):
     eval_sampler = DistributedBucketSampler(
       eval_dataset,
       hps.train.batch_size,
-      [96,375,750,1125,1500,1875,2250,2625,3000],
+      [48,187,375,562,750,937,1125,1312,1500],
       num_replicas=n_gpus,
       rank=rank,
       shuffle=True)
@@ -123,13 +125,12 @@ def run(rank, n_gpus, hps):
       segment_size = hps.train.segment_size // hps.data.hop_length,
       inter_channels = hps.model.inter_channels,
       hidden_channels = hps.model.hidden_channels,
-      resblock = hps.model.resblock,
-      resblock_kernel_sizes = hps.model.resblock_kernel_sizes,
-      resblock_dilation_sizes = hps.model.resblock_dilation_sizes,
       upsample_rates = hps.model.upsample_rates,
       upsample_initial_channel = hps.model.upsample_initial_channel,
       upsample_kernel_sizes = hps.model.upsample_kernel_sizes,
       n_flow = hps.model.n_flow,
+      dec_out_channels=1,
+      dec_kernel_size=7,
       n_speakers = hps.data.n_speakers,
       gin_channels = hps.model.gin_channels,
       requires_grad_pe = hps.requires_grad.pe,
@@ -184,18 +185,26 @@ def run(rank, n_gpus, hps):
     logger.info(f"Load synthesizer model : {hps.load_synthesizer}")
     net_g.module.load_synthesizer(os.path.join(hps.load_synthesizer))
   #net_g.module.save_synthesizer(os.path.join(hps.model_dir, "synthesizer.pth"))
+
+  #reg loss
+  residual_loss = ResidualLoss(
+      sample_rate=hps.data.sampling_rate,
+      fft_size=hps.data.filter_length,
+      hop_size=hps.data.hop_length,
+  ).cuda(rank)
+
   for epoch in range(epoch_str, sys.maxsize):
     if rank==0:
-      train_and_evaluate(rank, epoch, hps, [net_g, net_d, hubert], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval])
+      train_and_evaluate(rank, epoch, hps, [net_g, net_d, hubert], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval], residual_loss)
     else:
-      train_and_evaluate(rank, epoch, hps, [net_g, net_d, hubert], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, None], None, None)
+      train_and_evaluate(rank, epoch, hps, [net_g, net_d, hubert], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, None], None, None, residual_loss)
     scheduler_g.step()
     scheduler_d.step()
 
-def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loaders, logger, writers):
+def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loaders, logger, writers, residual_loss):
   net_g, net_d, hubert = nets
   optim_g, optim_d = optims
-  scheduler_g, scheduler_d = schedulers
+  _, _ = schedulers
   train_loader, eval_loader = loaders
   if writers is not None:
     writer, writer_eval = writers

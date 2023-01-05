@@ -33,8 +33,8 @@
     "max_wav_value": 32768.0,
     "sampling_rate": 24000,
     "filter_length": 1024,
-    "hop_length": 128,
-    "win_length": 256,
+    "hop_length": 256,
+    "win_length": 512,
     "n_mel_channels": 80,
     "mel_fmin": 0.0,
     "mel_fmax": null,
@@ -43,29 +43,6 @@
   "model": {
     "inter_channels": 256,
     "hidden_channels": 256,
-    "resblock": "1",
-    "resblock_kernel_sizes": [
-      3,
-      5,
-      7
-    ],
-    "resblock_dilation_sizes": [
-      [
-        1,
-        3,
-        5
-      ],
-      [
-        1,
-        3,
-        5
-      ],
-      [
-        1,
-        3,
-        5
-      ]
-    ],
     "upsample_rates": [
       8,
       4,
