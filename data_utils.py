@@ -181,6 +181,7 @@ class TextAudioSpeakerCollate():
         self.return_ids = return_ids
         self.no_text = no_text
         self.hop_size = hop_size
+        self.segment_size = segment_size
         self.max_frames = segment_size // hop_size
         self.df_f0_type = df_f0_type
         self.dense_factors = dense_factors

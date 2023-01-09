@@ -399,15 +399,15 @@ class SynthesizerTrn(nn.Module):
         target_sids[i] = source_id
     return target_sids
 
-  def voice_conversion(self, y, y_lengths, sid_src, sid_tgt):
+  def voice_conversion(self, y, y_lengths, sin, d, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
     g_src = self.emb_g(sid_src).unsqueeze(-1)
     g_tgt = self.emb_g(sid_tgt).unsqueeze(-1)
-    z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g_src)
+    z, _, _, y_mask = self.enc_q(y, y_lengths, g=g_src)
     z_p = self.flow(z, y_mask, g=g_src)
     z_hat = self.flow(z_p, y_mask, g=g_tgt, reverse=True)
-    o_hat = self.dec(z_hat * y_mask, g=g_tgt)
-    return o_hat, y_mask, (z, z_p, z_hat)
+    o_hat = self.dec(sin, z_hat * y_mask, d, sid=g_tgt)
+    return o_hat
 
   def voice_ra_pa_db(self, y, y_lengths, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."

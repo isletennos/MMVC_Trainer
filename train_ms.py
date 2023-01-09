@@ -402,9 +402,8 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger, hubert, residual_
 
           #HuBERT Loss
           tgt_y_hat = tgt_y_hat.float()
-          y_ = commons.slice_segments(y, ids_slice * hps.data.hop_length, hps.train.segment_size) # slice 
           tgt_y_hat_16k = torchaudio.functional.resample(tgt_y_hat, 24000, 16000)
-          y_16k = torchaudio.functional.resample(y_, 24000, 16000)
+          y_16k = torchaudio.functional.resample(y, 24000, 16000)
           tgt_units = hubert.units(tgt_y_hat_16k)
           units = hubert.units(y_16k)
 
