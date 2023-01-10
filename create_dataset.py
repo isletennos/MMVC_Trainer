@@ -98,16 +98,20 @@ def create_f0(wav_path, d_):
 
 #textを音素に
 def mozi2phone(hubert, wav_path, d_):
-    source, sr = torchaudio.load(wav_path)
-    source = torchaudio.functional.resample(source, sr, 16000)
-    source = source.unsqueeze(0)
-    units = hubert.units(source).numpy().squeeze(0)
     filename = os.path.basename(wav_path)
     d = os.path.basename(d_)
     save_path = "units/{}/{}".format(d , filename[:-4])
     os.makedirs("units", exist_ok=True)
     os.makedirs("units/{}".format(d), exist_ok=True)
-    np.save(save_path, units)
+
+    if os.path.isfile(save_path+ ".npy"):
+        pass
+    else:
+        source, sr = torchaudio.load(wav_path)
+        source = torchaudio.functional.resample(source, sr, 16000)
+        source = source.unsqueeze(0)
+        units = hubert.units(source).numpy().squeeze(0)
+        np.save(save_path, units)
     return save_path + ".npy"
 
 #filelistの1行を作成する
