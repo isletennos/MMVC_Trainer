@@ -9,6 +9,7 @@ import torch, torchaudio
 import requests
 import copy
 from scipy.interpolate import interp1d
+import utils
 
 #Global
 NUM_MAX_SID = 127
@@ -167,6 +168,7 @@ def create_dataset(filename):
     output_file_list = list()
     output_file_list_val = list()
     hubert = torch.hub.load("bshall/hubert:main", "hubert_soft")
+    print("frame : {} win : {} hop : {}".format(FRAME_LENGTH, WIN_LENGTH, HOP_LENGTH))
 
     for d in textful_dir_list:
         d = d[:-1]
@@ -342,6 +344,15 @@ def main():
     args = parser.parse_args()
     filename = args.filename
     print(filename)
+    #F0抽出のパラメータを設定
+    global FRAME_LENGTH
+    global WIN_LENGTH
+    global HOP_LENGTH
+    hps = utils.get_hparams_from_file(args.config)
+    FRAME_LENGTH = hps.data.filter_length
+    WIN_LENGTH = hps.data.win_length
+    HOP_LENGTH = hps.data.hop_length
+
     if args.multi_target != None:
         n_spk = create_dataset_multi_character(filename, args.multi_target)
     elif args.target != 9999 and args.target == ZUNDAMON_SID:
