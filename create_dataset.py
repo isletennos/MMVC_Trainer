@@ -20,9 +20,9 @@ MY_SID = 0
 VAL_PER = 20
 
 #F0 param
-FRAME_LENGTH = 1024
-WIN_LENGTH = 512
-HOP_LENGTH = 256
+FRAME_LENGTH = 512
+WIN_LENGTH = 256
+HOP_LENGTH = 128
 
 #librosa pyin を使ってf0を推定する
 def get_f0(wav_path, frame_length=FRAME_LENGTH, win_length=WIN_LENGTH, hop_length=HOP_LENGTH):
@@ -344,14 +344,6 @@ def main():
     args = parser.parse_args()
     filename = args.filename
     print(filename)
-    #F0抽出のパラメータを設定
-    global FRAME_LENGTH
-    global WIN_LENGTH
-    global HOP_LENGTH
-    hps = utils.get_hparams_from_file(args.config)
-    FRAME_LENGTH = hps.data.filter_length
-    WIN_LENGTH = hps.data.win_length
-    HOP_LENGTH = hps.data.hop_length
 
     if args.multi_target != None:
         n_spk = create_dataset_multi_character(filename, args.multi_target)
