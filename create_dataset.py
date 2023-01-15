@@ -12,7 +12,7 @@ from scipy.interpolate import interp1d
 import utils
 
 #Global
-NUM_MAX_SID = 127
+NUM_MAX_SID = 255
 #JVS+Zun+Sora+Me+Tsum+Tsuk+NICT*2 = 107
 NUM_TRAINED_SPEAKER = 1
 ZUNDAMON_SID = 101
