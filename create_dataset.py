@@ -130,7 +130,7 @@ def create_data_line(wav, speaker_id, d, hubert):
         str(cf0_mean)
     )
     print(one_line)
-    return one_line
+    return one_line, cf0_mean
 
 def create_json(filename, num_speakers, sr, config_path):
     if os.path.exists(config_path):
@@ -177,14 +177,17 @@ def create_dataset(filename):
         if len(wav_file_list) == 0:
             continue
         counter = 0
+        cf0_mean_t = 0.0
         for wav in wav_file_list:
-            one_line = create_data_line(wav, speaker_id, d, hubert)
+            one_line, cf0_mean = create_data_line(wav, speaker_id, d, hubert)
             if counter % VAL_PER != 0:
                 output_file_list.append(one_line)
             else:
                 output_file_list_val.append(one_line)
             counter = counter +1
-        Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
+            cf0_mean_t = cf0_mean_t + cf0_mean
+        cf0_mean_t = cf0_mean_t / counter
+        Correspondence_list.append(str(speaker_id)+"|"+ str(cf0_mean_t) + "|" + os.path.basename(d) + "\n")
         speaker_id = speaker_id + 1
         if speaker_id > NUM_MAX_SID:
             break

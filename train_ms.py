@@ -42,7 +42,7 @@ from losses import (
 )
 from mel_processing import mel_spectrogram_torch_data, spec_to_mel_torch_data
 from sifigan.losses import ResidualLoss
-from sifigan.discriminator import UnivNetMultiResolutionMultiPeriodDiscriminator
+#from sifigan.discriminator import UnivNetMultiResolutionMultiPeriodDiscriminator
 
 torch.backends.cudnn.benchmark = True
 global_step = 0
@@ -150,7 +150,8 @@ def run(rank, n_gpus, hps):
       requires_grad_text_enc = hps.requires_grad.text_enc,
       requires_grad_dec = hps.requires_grad.dec
       ).cuda(rank)
-  net_d = UnivNetMultiResolutionMultiPeriodDiscriminator().cuda(rank)
+  #net_d = UnivNetMultiResolutionMultiPeriodDiscriminator().cuda(rank)
+  net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm).cuda(rank)
   optim_g = torch.optim.AdamW(
       net_g.parameters(), 
       hps.train.learning_rate, 
@@ -256,9 +257,9 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     y_hat_mel = mel_spectrogram_torch_data(y_hat.squeeze(1), hps.data)
 
     # Discriminator
-    #y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
-    y_true = net_d(y)
-    y_fake = net_d(y_hat.detach())
+    y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
+    #y_true = net_d(y)
+    #y_fake = net_d(y_hat.detach())
     # print(len(y_true))
     # print(y_true[0].shape)
     # print(y_true[1].shape)
@@ -270,7 +271,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     # print(y_true[7].shape)
 
     with autocast(enabled=False):
-      loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(y_true, y_fake)
+      #loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(y_true, y_fake)
+      loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(y_d_hat_r, y_d_hat_g)
       loss_disc_all = loss_disc
     optim_d.zero_grad()
     scaler.scale(loss_disc_all).backward()
@@ -292,17 +294,18 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
     with autocast(enabled=hps.train.fp16_run):
       # Generator
-      #y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
-      y_true, fmap_true = net_d(y, True)
-      y_fake, fmap_fake = net_d(y_hat.detach(), True)
-      #y_d_tgt_hat_g = net_d(y, tgt_y_hat, False)
+      y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
+      #y_true, fmap_true = net_d(y, True)
+      #y_fake, fmap_fake = net_d(y_hat.detach(), True)
       with autocast(enabled=False):
         loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
         loss_hubert = F.l1_loss(units, tgt_units) * hps.train.l1_hubert
         reg_loss = residual_loss(y_reg, y, f0) * hps.train.reg
         loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
-        loss_fm = feature_loss(fmap_true, fmap_fake)
-        loss_gen, losses_gen = generator_loss(y_fake)
+        #loss_fm = feature_loss(fmap_true, fmap_fake)
+        #loss_gen, losses_gen = generator_loss(y_fake)
+        loss_fm = feature_loss(fmap_r, fmap_g)
+        loss_gen, losses_gen = generator_loss(y_d_hat_g)
         loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl + loss_hubert + reg_loss
 
     optim_g.zero_grad()
