@@ -125,8 +125,8 @@ dataset
         1. 下記リンクより、「G_180000.pth」「D_180000.pth」をダウンロード。  
 https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sharing
         2. 「G_180000.pth」「D_180000.pth」を「fine_model」ディレクトリに配置します。**(良く忘れるポイントなので要注意！)**  
-3. notebookディレクトリにある「Create_Configfile_zundamon.ipynb」をGoogle Colab 上で実行、学習に必要なconfigファイルを作成します  
-4. configsに作成されたtrain_config_zundamon.jsonの  
+3. notebookディレクトリにある「01_Create_Configfile.ipynb」をGoogle Colab 上で実行、学習に必要なconfigファイルを作成します  
+4. configsに作成されたtrain_config.jsonの  
   
       - "eval_interval"  
         modelを保存する間隔です。
@@ -135,11 +135,11 @@ https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sha
 
     上記2項目を環境に応じて最適化してください。わからない方はそのままで大丈夫です。  
 
-5. notebookディレクトリにある「Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
+5. notebookディレクトリにある「02_Train_MMVC.ipynb」をgoogle colab 上で実行してください。  
     logs/にモデルが生成されます。
 
 #### Ph3. 学習したモデルの性能検証
-1. notebookディレクトリにある「MMVC_Interface.ipynb」をgoogle colab 上で実行してください。  
+1. notebookディレクトリにある「03_MMVC_Interface.ipynb」をgoogle colab 上で実行してください。  
 ### 好きなキャラクターの声になる
 #### Ph1. 自分の音声の録音と音声データの配置 及びターゲット音声データの配置
 1. 自分の声の音声データとその音声データに対応するテキスト、変換したい声の音声データとその音声データに対応するテキストを用意します。  
