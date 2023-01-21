@@ -168,7 +168,6 @@ def create_dataset(filename):
     output_file_list = list()
     output_file_list_val = list()
     hubert = torch.hub.load("bshall/hubert:main", "hubert_soft")
-    print("frame : {} win : {} hop : {}".format(FRAME_LENGTH, WIN_LENGTH, HOP_LENGTH))
 
     for d in textful_dir_list:
         d = d[:-1]
@@ -218,14 +217,17 @@ def create_dataset_zundamon(filename):
         print("Error" + d + "/wav に音声データがありません")
         exit()
     counter = 0
+    cf0_mean_t = 0.0
     for wav in wav_file_list:
-        one_line = create_data_line(wav, speaker_id, d, hubert)
+        one_line, cf0_mean = create_data_line(wav, speaker_id, d, hubert)
         if counter % VAL_PER != 0:
             output_file_list.append(one_line)
         else:
             output_file_list_val.append(one_line)
         counter = counter +1
-    Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
+        cf0_mean_t = cf0_mean_t + cf0_mean
+    cf0_mean_t = cf0_mean_t / counter
+    Correspondence_list.append(str(speaker_id)+"|"+ str(cf0_mean_t) + "|" + os.path.basename(d) + "\n")
 
     speaker_id = ZUNDAMON_SID
     d = zundamon_path
@@ -235,14 +237,17 @@ def create_dataset_zundamon(filename):
         print("Error" + d + "/wav に音声データがありません")
         exit()
     counter = 0
+    cf0_mean_t = 0.0
     for wav in wav_file_list:
-        one_line = create_data_line(wav, speaker_id, d, hubert)
+        one_line, cf0_mean = create_data_line(wav, speaker_id, d, hubert)
         if counter % VAL_PER != 0:
             output_file_list.append(one_line)
         else:
             output_file_list_val.append(one_line)
         counter = counter +1
-    Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
+        cf0_mean_t = cf0_mean_t + cf0_mean
+    cf0_mean_t = cf0_mean_t / counter
+    Correspondence_list.append(str(speaker_id)+"|"+ str(cf0_mean_t) + "|" + os.path.basename(d) + "\n")
 
     lists = [output_file_list, output_file_list_val, Correspondence_list]
     write_configs(lists, filename)
@@ -270,14 +275,17 @@ def create_dataset_character(filename, tid):
         print("Error" + d + "/wav に音声データがありません")
         exit()
     counter = 0
+    cf0_mean_t = 0.0
     for wav in wav_file_list:
-        one_line = create_data_line(wav, speaker_id, d, hubert)
+        one_line, cf0_mean = create_data_line(wav, speaker_id, d, hubert)
         if counter % VAL_PER != 0:
             output_file_list.append(one_line)
         else:
             output_file_list_val.append(one_line)
         counter = counter +1
-    Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
+        cf0_mean_t = cf0_mean_t + cf0_mean
+    cf0_mean_t = cf0_mean_t / counter
+    Correspondence_list.append(str(speaker_id)+"|"+ str(cf0_mean_t) + "|" + os.path.basename(d) + "\n")
 
     speaker_id = tid
     d = target_path
@@ -287,13 +295,16 @@ def create_dataset_character(filename, tid):
         print("Error" + d + "/wav に音声データがありません")
         exit()
     counter = 0
+    cf0_mean_t = 0.0
     for wav in wav_file_list:
-        one_line = create_data_line(wav, speaker_id, d, hubert)
+        one_line, cf0_mean = create_data_line(wav, speaker_id, d, hubert)
         if counter % VAL_PER != 0:
             output_file_list.append(one_line)
         else:
             output_file_list_val.append(one_line)
         counter = counter +1
+        cf0_mean_t = cf0_mean_t + cf0_mean
+    cf0_mean_t = cf0_mean_t / counter
     Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
 
     lists = [output_file_list, output_file_list_val, Correspondence_list]
@@ -319,13 +330,16 @@ def create_dataset_multi_character(filename, file_path):
                 print("Error" + target_dir + "/wav に音声データがありません")
                 exit()
             counter = 0
+            cf0_mean_t = 0.0
             for wav in wav_file_list:
-                one_line = create_data_line(wav, sid, target_dir, hubert)
+                one_line, cf0_mean = create_data_line(wav, sid, target_dir, hubert)
                 if counter % VAL_PER != 0:
                     output_file_list.append(one_line)
                 else:
                     output_file_list_val.append(one_line)
                 counter = counter +1
+                cf0_mean_t = cf0_mean_t + cf0_mean
+            cf0_mean_t = cf0_mean_t / counter
             Correspondence_list.append(str(sid)+"|"+ target_dir + "\n")
 
     lists = [output_file_list, output_file_list_val, Correspondence_list]

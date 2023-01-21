@@ -315,6 +315,7 @@ class SynthesizerTrn(nn.Module):
     self.requires_grad_flow = requires_grad_flow
     self.requires_grad_text_enc = requires_grad_text_enc
     self.requires_grad_dec = requires_grad_dec
+    self.requires_grad_emb_g = requires_grad_emb_g
 
     self.enc_q = PosteriorEncoder(
         spec_channels, 
@@ -349,6 +350,7 @@ class SynthesizerTrn(nn.Module):
 
     if n_speakers > 1:
       self.emb_g = nn.Embedding(n_speakers, gin_channels)
+      self.emb_g.requires_grad = requires_grad_emb_g
 
   def forward(self, x, x_lengths, y, y_lengths, sin, d, slice_id, sid=None, target_ids=None):
     x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)

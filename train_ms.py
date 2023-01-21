@@ -148,7 +148,8 @@ def run(rank, n_gpus, hps):
       requires_grad_pe = hps.requires_grad.pe,
       requires_grad_flow = hps.requires_grad.flow,
       requires_grad_text_enc = hps.requires_grad.text_enc,
-      requires_grad_dec = hps.requires_grad.dec
+      requires_grad_dec = hps.requires_grad.dec,
+      requires_grad_emb_g = hps.requires_grad.emb_g
       ).cuda(rank)
   #net_d = UnivNetMultiResolutionMultiPeriodDiscriminator().cuda(rank)
   net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm).cuda(rank)
