@@ -92,7 +92,7 @@
     "emb_g": true
   },
   "augmentation": {
-    "enable": false,
+    "enable": true,
     "gain_p": 0.5,
     "min_gain_in_db": -3,
     "max_gain_in_db": 6,
