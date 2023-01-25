@@ -262,8 +262,8 @@ def create_dataset_character(filename, tid):
     output_file_list_val = list()
     hubert = torch.hub.load("bshall/hubert:main", "hubert_soft")
     #paths
-    my_path = "dataset/textful/00_myvoice"
-    target_path = "dataset/textful/01_target"
+    my_path = "dataset/00_myvoice"
+    target_path = "dataset/01_target"
 
     #set list wav and text
     #myvoice
