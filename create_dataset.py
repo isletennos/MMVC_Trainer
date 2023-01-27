@@ -305,7 +305,7 @@ def create_dataset_character(filename, tid):
         counter = counter +1
         cf0_mean_t = cf0_mean_t + cf0_mean
     cf0_mean_t = cf0_mean_t / counter
-    Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
+    Correspondence_list.append(str(speaker_id)+"|"+ str(cf0_mean_t) + "|" + os.path.basename(d) + "\n")
 
     lists = [output_file_list, output_file_list_val, Correspondence_list]
     write_configs(lists, filename)
@@ -340,7 +340,7 @@ def create_dataset_multi_character(filename, file_path):
                 counter = counter +1
                 cf0_mean_t = cf0_mean_t + cf0_mean
             cf0_mean_t = cf0_mean_t / counter
-            Correspondence_list.append(str(sid)+"|"+ target_dir + "\n")
+            Correspondence_list.append(str(sid)+"|"+ str(cf0_mean_t) +"|"+ target_dir + "\n")
 
     lists = [output_file_list, output_file_list_val, Correspondence_list]
     write_configs(lists, filename)
