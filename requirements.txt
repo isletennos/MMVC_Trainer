@@ -1,4 +1,3 @@
-pyopenjtalk
 pyworld
 #Cython==0.29.21
 #librosa==0.8.0

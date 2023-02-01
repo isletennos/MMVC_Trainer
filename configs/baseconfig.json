@@ -1,9 +1,9 @@
 {
   "train": {
-    "eval_interval": 1000,
+    "eval_interval": 2000,
     "best": true,
     "backup": {
-      "interval": 2000,
+      "interval": 10000,
       "g_only": true,
       "mean_of_num_eval": 10
     },
@@ -14,7 +14,7 @@
       0.99
     ],
     "eps": 1e-09,
-    "batch_size": 10,
+    "batch_size": 16,
     "fp16_run": true,
     "lr_decay": 0.999875,
     "segment_size": 8192,
@@ -22,7 +22,8 @@
     "warmup_epochs": 0,
     "c_mel": 45,
     "c_kl": 1.0,
-    "l1_hubert": 45
+    "reg": 1.0,
+    "l1_hubert": 22.5
   },
   "data": {
     "training_files": "filelists/train_config_textful.txt",
@@ -30,95 +31,76 @@
     "training_files_notext": "filelists/train_config_textless.txt",
     "validation_files_notext": "filelists/train_config_val_textless.txt",
     "Correspondence": "filelists/dec_not_propagation_label_and_change_melspec_val_textless.txt",
-    "text_cleaners": [
-      "japanese_cleaners"
-    ],
     "max_wav_value": 32768.0,
     "sampling_rate": 24000,
-    "filter_length": 1024,
-    "hop_length": 256,
-    "win_length": 1024,
+    "filter_length": 512,
+    "hop_length": 128,
+    "win_length": 256,
     "n_mel_channels": 80,
     "mel_fmin": 0.0,
     "mel_fmax": null,
-    "add_blank": true,
-    "n_speakers": 127,
-    "cleaned_text": false
+    "df_f0_type": "cf0",
+    "dense_factors": [
+      0.5,
+      1,
+      4,
+      8
+    ],
+    "sine_amp": 0.1,
+    "noise_amp": 0.003,
+    "sine_f0_type": "cf0",
+    "signal_types": [
+      "sine"
+    ],
+    "n_speakers": 255
   },
   "model": {
-    "inter_channels": 192,
-    "hidden_channels": 192,
-    "filter_channels": 768,
-    "n_heads": 2,
-    "n_layers": 2,
-    "kernel_size": 3,
-    "p_dropout": 0.1,
-    "resblock": "1",
-    "resblock_kernel_sizes": [
-      3,
-      7,
-      11
-    ],
-    "resblock_dilation_sizes": [
-      [
-        1,
-        3,
-        5
-      ],
-      [
-        1,
-        3,
-        5
-      ],
-      [
-        1,
-        3,
-        5
-      ]
-    ],
+    "inter_channels": 256,
+    "hidden_channels": 256,
     "upsample_rates": [
       8,
-      8,
+      4,
       2,
       2
     ],
     "upsample_initial_channel": 512,
     "upsample_kernel_sizes": [
       16,
-      16,
       8,
-      8
+      4,
+      4
     ],
-    "n_layers_q": 3,
     "use_spectral_norm": false,
-    "n_flow": 12,
-    "gin_channels": 128,
-    "n_note": 79,
+    "n_flow": 8,
+    "gin_channels": 256,
     "use_mel_train": false
   },
   "others": {
     "os_type": "linux",
     "create_vc_sample": false,
-    "vc_sample_config":{
-      "source_id":0,
-      "target_id":101,
-      "input_filename":"dataset/00_myvoice/wav/xxxx.wav"
-    } 
+    "vc_sample_config": {
+      "source_id": 0,
+      "target_id": 101,
+      "input_filename": "dataset/00_myvoice/wav/xxxx.wav"
+    }
+  },
+  "requires_grad": {
+    "pe": true,
+    "flow": true,
+    "text_enc": true,
+    "dec": true,
+    "emb_g": true
   },
   "augmentation": {
-    "enable": false,
+    "enable": true,
     "gain_p": 0.5,
-    "min_gain_in_db": -10,
-    "max_gain_in_db": 10,
-    "time_stretch_p": 0.5,
+    "min_gain_in_db": -3,
+    "max_gain_in_db": 6,
+    "time_stretch_p": 0.0,
     "min_rate": 0.75,
     "max_rate": 1.25,
     "pitch_shift_p": 0.0,
     "min_semitones": -4.0,
-    "max_semitones": 4.0,
-    "add_gaussian_noise_p": 0.0,
-    "min_amplitude": 0.001,
-    "max_amplitude": 0.04,
-    "frequency_mask_p": 0.0
+    "max_semitones": 4.0
   }
 }

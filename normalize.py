@@ -4,8 +4,8 @@ import glob
 from pydub import AudioSegment, silence
 import sys
 import tqdm
-# -16 + -6
-NORMALIZE_dBFS = -22
+# -16 + -9
+NORMALIZE_dBFS = -25
 #50ms
 SILENCE_THRESHOLD_MS = 50
 SAMPLING_RATE = 24000

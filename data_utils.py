@@ -17,6 +17,9 @@ from retry import retry
 import random
 import torchaudio
 
+from sifigan.utils import dilated_factor
+from sifigan.utils.features import SignalGenerator
+
 """Multi speaker version"""
 class TextAudioSpeakerLoader(torch.utils.data.Dataset):
     """
@@ -42,15 +45,6 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             self.pitch_shift_p = augmentation_params.pitch_shift_p
             self.min_semitones = augmentation_params.min_semitones
             self.max_semitones = augmentation_params.max_semitones
-            self.add_gaussian_noise_p = augmentation_params.add_gaussian_noise_p
-            self.min_amplitude = augmentation_params.min_amplitude
-            self.max_amplitude = augmentation_params.max_amplitude
-            self.frequency_mask_p = augmentation_params.frequency_mask_p
-            self.note_border = self.get_note_list("note_correspondence.csv")
-
-        self.add_blank = hparams.add_blank
-        self.min_text_len = getattr(hparams, "min_text_len", 1)
-        self.max_text_len = getattr(hparams, "max_text_len", 1000)
         
         self.disable_tqdm = disable_tqdm
 
@@ -70,8 +64,9 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         audiopaths_sid_text_new = []
         lengths = []
         
-        for audiopath, sid, text in tqdm.tqdm(self.audiopaths_sid_text, disable=self.disable_tqdm):
-            audiopaths_sid_text_new.append([audiopath, sid, text])
+        for audiopath, sid, text, f0, cf0, _ in tqdm.tqdm(self.audiopaths_sid_text, disable=self.disable_tqdm):
+            audiopaths_sid_text_new.append([audiopath, sid, text, f0, cf0])
+            #ファイルのサイズをバイト単位で取得
             lengths.append(os.path.getsize(audiopath) // (2 * self.hop_length))
         self.audiopaths_sid_text = audiopaths_sid_text_new
         self.lengths = lengths
@@ -79,25 +74,17 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
 
     def get_audio_text_speaker_pair(self, audiopath_sid_text):
         # separate filename, speaker_id and text
-        audiopath, sid, text = audiopath_sid_text[0], audiopath_sid_text[1], audiopath_sid_text[2]
+        audiopath, sid, text, f0, cf0 = audiopath_sid_text[0], audiopath_sid_text[1], audiopath_sid_text[2], audiopath_sid_text[3], audiopath_sid_text[4]
         text = self.get_text(text)
-        #DAは一旦削除、再導入する場合は全部最新になっているか確認すること
-        """
-        if self.augmentation:
-            spec, wav, note_, execute_flag = self.get_audio(audiopath)
-            if execute_flag:
-                note = note_
-        else:
-            spec, wav, _, _ = self.get_audio(audiopath)
-        """
-        spec, wav, _ = self.get_audio(audiopath)
+        #DA、音量とピッチのみ機能再開、話速は使わないこと
+        spec, wav = self.get_audio(audiopath)
         sid = self.get_sid(sid)
-        return (text, spec, wav, sid)
+        f0 = self.get_f0(f0)
+        cf0 = self.get_f0(cf0)
+        return (text, spec, wav, sid, f0, cf0)
         
     @retry(exceptions=(PermissionError), tries=100, delay=10)
     def get_audio(self, filename):
-        #DAした場合、ピッチの再計算が必要なのでその為の管理フラグ
-        execute_flag = False
         # 音声データは±1.0内に正規化したtorchベクトルでunsqueeze(0)で外側1次元くるんだものを扱う
         audio, sampling_rate = load_wav_to_torch(filename)
         try:
@@ -110,46 +97,33 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         audio_norm = self.get_normalized_audio(audio, self.max_wav_value)
 
         if self.augmentation:
-            audio_augmented, execute_flag = self.add_augmentation(audio_norm, sampling_rate)
-            #audio_noised = self.add_noise(audio_augmented, sampling_rate)
+            audio_augmented = self.add_augmentation(audio_norm, sampling_rate)
             # ノーマライズ後のaugmentationとnoise付加で範囲外になったところを削る
+            # -1～1に丸める
             audio_augmented = torch.clamp(audio_augmented, -1, 1) 
-            #audio_noised = torch.clamp(audio_noised, -1, 1)
-            # audio(音声波形)は教師信号となるのでノイズは含まずaugmentationのみしたものを使用
             audio_norm = audio_augmented
-            """
-            if execute_flag:
-                note = self.get_note_text(audio_norm[0])
-            else:
-                note = ""
-            """
             # spec(スペクトログラム)は入力信号となるのでaugmentationしてさらにノイズを付加したものを使用
             spec = spectrogram_torch(audio_norm, self.filter_length,
                 self.sampling_rate, self.hop_length, self.win_length,
                 center=False)
-            spec_noised = self.add_spectrogram_noise(spec)
-            spec = torch.squeeze(spec_noised, 0)
+            spec = torch.squeeze(spec, 0)
         else:
             spec = spectrogram_torch(audio_norm, self.filter_length,
                 self.sampling_rate, self.hop_length, self.win_length,
                 center=False)
             spec = torch.squeeze(spec, 0)
-        return spec, audio_norm, execute_flag
+        return spec, audio_norm
 
     def add_augmentation(self, audio, sampling_rate):
         gain_in_db = 0.0
-        execute_flag = False
         if random.random() <= self.gain_p:
             gain_in_db = random.uniform(self.min_gain_in_db, self.max_gain_in_db)
-            execute_flag = True
         time_stretch_rate = 1.0
         if random.random() <= self.time_stretch_p:
             time_stretch_rate = random.uniform(self.min_rate, self.max_rate)
-            execute_flag = True
         pitch_shift_semitones = 0
         if random.random() <= self.pitch_shift_p:
             pitch_shift_semitones = random.uniform(self.min_semitones, self.max_semitones) * 100 # 1/100 semitone 単位指定のため
-            execute_flag = True
         augmentation_effects = [
             ["gain",  f"{gain_in_db}"],
             ["tempo", f"{time_stretch_rate}"],
@@ -157,29 +131,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
             ["rate",  f"{sampling_rate}"]
         ]
         audio_augmented, _ = torchaudio.sox_effects.apply_effects_tensor(audio, sampling_rate, augmentation_effects)
-        return audio_augmented, execute_flag
-
-    def add_noise(self, audio, sampling_rate):
-        # AddGaussianNoise
-        audio = self.add_gaussian_noise(audio)
-        return audio
-
-    def add_gaussian_noise(self, audio):
-        assert self.min_amplitude >= 0.0
-        assert self.max_amplitude >= 0.0
-        assert self.max_amplitude >= self.min_amplitude
-        if random.random() > self.add_gaussian_noise_p:
-            return audio
-        amplitude = random.uniform(self.min_amplitude, self.max_amplitude)
-        noise = torch.randn(audio.size())
-        noised_audio = audio + amplitude * noise
-        return noised_audio
-
-    def add_spectrogram_noise(self, spec):
-        # FrequencyMask
-        masking = torchaudio.transforms.FrequencyMasking(freq_mask_param=80)
-        masked = masking(spec)
-        return masked
+        return audio_augmented
 
     def get_normalized_audio(self, audio, max_wav_value):
         audio_norm = audio / max_wav_value
@@ -189,6 +141,10 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
     def get_text(self, text):
         text_norm = torch.FloatTensor(np.load(text))
         return text_norm
+
+    def get_f0(self, f0):
+        f0_tensor = torch.FloatTensor(np.load(f0))
+        return f0_tensor
 
     def get_sid(self, sid):
         sid = torch.LongTensor([int(sid)])
@@ -206,9 +162,42 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
 class TextAudioSpeakerCollate():
     """ Zero-pads model inputs and targets
     """
-    def __init__(self, return_ids=False, no_text = False):
+    def __init__(
+        self, 
+        sample_rate,
+        segment_size,
+        hop_size,
+        df_f0_type="cf0",
+        dense_factors=[0.5, 1, 4, 8],
+        upsample_scales=[8, 4, 2, 2],
+        sine_amp=0.1,
+        noise_amp=0.003,
+        sine_f0_type="cf0",
+        signal_types=["sine"],
+        train = True,
+        f0_factor = 1.0,
+        return_ids=False,
+        no_text = False):
         self.return_ids = return_ids
         self.no_text = no_text
+        self.hop_size = hop_size
+        self.segment_size = segment_size
+        self.max_frames = segment_size // hop_size
+        self.df_f0_type = df_f0_type
+        self.dense_factors = dense_factors
+        self.prod_upsample_scales = np.cumprod(upsample_scales)
+        self.sample_rate = sample_rate
+        self.sine_f0_type = sine_f0_type
+        self.signal_generator = SignalGenerator(
+            sample_rate=sample_rate,
+            hop_size=hop_size,
+            sine_amp=sine_amp,
+            noise_amp=noise_amp,
+            signal_types=signal_types,
+        )
+        self.train = train
+        self.f0_factor = f0_factor
+
 
     def __call__(self, batch):
         """Collate's training batch from normalized text, audio and speaker identities
@@ -223,21 +212,47 @@ class TextAudioSpeakerCollate():
 
         max_text_len = max([len(x[0]) for x in batch])
         max_spec_len = max([x[1].size(1) for x in batch])
-        max_wav_len = max([x[2].size(1) for x in batch])
 
         text_lengths = torch.LongTensor(len(batch))
         spec_lengths = torch.LongTensor(len(batch))
         wav_lengths = torch.LongTensor(len(batch))
         sid = torch.LongTensor(len(batch))
+        f0_lengths = torch.LongTensor(len(batch))
+        cf0_lengths = torch.LongTensor(len(batch))
+        slice_id = torch.LongTensor(len(batch))
 
         text_padded = torch.FloatTensor(len(batch), max_text_len, 256)
         spec_padded = torch.FloatTensor(len(batch), batch[0][1].size(0), max_spec_len)
-        wav_padded = torch.FloatTensor(len(batch), 1, max_wav_len)
+        
+        # row wav は sliceした形でしか使わない 
+        wav_padded = torch.FloatTensor(len(batch), 1, self.segment_size)
+        # f0 も同上
+        if self.train:
+            f0_padded = torch.FloatTensor(len(batch), 1, self.max_frames)
+            cf0_padded = torch.FloatTensor(len(batch), 1, self.max_frames)
+        # 推論時の処理
+        else:
+            tmp = batch[0]
+            f0_padded = torch.FloatTensor(len(batch), 1, tmp[4].size(0))
+            cf0_padded = torch.FloatTensor(len(batch), 1, tmp[5].size(0))
+        
+        #返り値の初期化
         text_padded.zero_()
         spec_padded.zero_()
         wav_padded.zero_()
+        f0_padded.zero_()
+        cf0_padded.zero_()
+
+        #dfs
+        dfs_batch = [[] for _ in range(len(self.dense_factors))]
+
         for i in range(len(ids_sorted_decreasing)):
             row = batch[ids_sorted_decreasing[i]]
+
+            #Slice
+            start_frame = np.random.randint(0, (row[1].size(1) - self.max_frames))
+            start_step = start_frame * self.hop_size
+            slice_id[i] = start_frame
 
             text = row[0]
             text_padded[i, :text.shape[0], :] = text
@@ -247,15 +262,72 @@ class TextAudioSpeakerCollate():
             spec_padded[i, :, :spec.size(1)] = spec
             spec_lengths[i] = spec.size(1)
 
+            #Slice した音声を格納
             wav = row[2]
-            wav_padded[i, :, :wav.size(1)] = wav
+            wav_padded[i, :, :wav.size(1)] = wav[:,start_step:start_step + self.segment_size]
             wav_lengths[i] = wav.size(1)
 
             sid[i] = row[3]
 
+            #学習時 f0/cf0をSliceして格納、dilated_factorを求める
+            if self.train:
+                f0 = row[4]
+                f0_padded[i, :, :f0.size(0)] = f0[start_frame : start_frame + self.max_frames]
+                f0_lengths[i] = f0.size(0)
+
+                cf0 = row[5]
+                cf0_padded[i, :, :cf0.size(0)] = cf0[start_frame : start_frame + self.max_frames]
+                cf0_lengths[i] = cf0.size(0)
+
+                #dfs
+                dfs = []
+                #dilated_factor の入力はnumpy!!
+                for df, us in zip(self.dense_factors, self.prod_upsample_scales):
+                    dfs += [
+                            np.repeat(dilated_factor(torch.unsqueeze(cf0[start_frame : start_frame + self.max_frames], dim=1).to('cpu').detach().numpy(), self.sample_rate, df), us)
+                            if self.df_f0_type == "cf0"
+                            else np.repeat(dilated_factor(torch.unsqueeze(f0[start_frame : start_frame + self.max_frames], dim=1).to('cpu').detach().numpy(), self.sample_rate, df), us)
+                        ]
+            #推論時 f0/cf0にf0の倍率を乗算してf0/cf0を求める
+            else:
+                f0 = row[4] * self.f0_factor
+                f0_padded[i, :, :f0.size(0)] = f0
+                f0_lengths[i] = f0.size(0)
+
+                cf0 = row[5] * self.f0_factor
+                cf0_padded[i, :, :cf0.size(0)] = cf0
+                cf0_lengths[i] = cf0.size(0)
+
+                #dfs
+                dfs = []
+                #dilated_factor の入力はnumpy!!
+                for df, us in zip(self.dense_factors, self.prod_upsample_scales):
+                    dfs += [
+                            np.repeat(dilated_factor(torch.unsqueeze(cf0, dim=1).to('cpu').detach().numpy(), self.sample_rate, df), us)
+                            if self.df_f0_type == "cf0"
+                            else np.repeat(dilated_factor(torch.unsqueeze(f0, dim=1).to('cpu').detach().numpy(), self.sample_rate, df), us)
+                        ]
+            
+            #よくわからないけど、後で論文ちゃんと読む
+            for i in range(len(self.dense_factors)):
+                dfs_batch[i] += [
+                    dfs[i].astype(np.float32).reshape(-1, 1)
+                ]  # [(T', 1), ...]
+        #よくわからないdfsを転置
+        for i in range(len(self.dense_factors)):
+            dfs_batch[i] = torch.FloatTensor(np.array(dfs_batch[i])).transpose(
+                2, 1
+            )  # (B, 1, T')
+        
+        #f0/cf0を実際に使うSignalに変換する
+        if self.sine_f0_type == "cf0":
+            in_batch = self.signal_generator(cf0_padded)
+        elif self.sine_f0_type == "f0":
+            in_batch = self.signal_generator(f0_padded)
+
         if self.return_ids:
-            return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, ids_sorted_decreasing
-        return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid
+            return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, ids_sorted_decreasing, f0_padded, f0_lengths, in_batch, dfs_batch, slice_id
+        return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, f0_padded, f0_lengths, in_batch, dfs_batch, slice_id
 
 
 class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
