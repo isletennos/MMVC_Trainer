@@ -31,7 +31,7 @@ def get_f0(wav_path, frame_length=FRAME_LENGTH, win_length=WIN_LENGTH, hop_lengt
     y = np.pad(y, pad_width, 'reflect')
     #Get f0
     #https://librosa.org/doc/main/generated/librosa.pyin.html
-    f0, _, _ = librosa.pyin(y, sr = sr, frame_length=frame_length, win_length=win_length, hop_length=hop_length, fmin = librosa.note_to_hz('C2'), fmax= librosa.note_to_hz('C7'), center=False, pad_mode='reflect')
+    f0, _, _ = librosa.pyin(y, sr = sr, frame_length=frame_length, win_length=win_length, hop_length=hop_length, fmin = librosa.note_to_hz('C2'), fmax= librosa.note_to_hz('C5'), center=False, pad_mode='reflect')
     f0 = np.nan_to_num(f0)
     return f0
 
