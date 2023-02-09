@@ -10,6 +10,8 @@ import requests
 import copy
 from scipy.interpolate import interp1d
 import utils
+import pyworld as pw
+import math
 
 #Global
 NUM_MAX_SID = 255
@@ -24,16 +26,21 @@ FRAME_LENGTH = 512
 WIN_LENGTH = 256
 HOP_LENGTH = 128
 
-#librosa pyin を使ってf0を推定する
+#pyworld Harvest を使ってf0を推定する
 def get_f0(wav_path, frame_length=FRAME_LENGTH, win_length=WIN_LENGTH, hop_length=HOP_LENGTH):
     y, sr = librosa.load(wav_path, 24000)
     pad_width=[int((frame_length-hop_length)/2),int((frame_length-hop_length)/2)]
     y = np.pad(y, pad_width, 'reflect')
     #Get f0
     #https://librosa.org/doc/main/generated/librosa.pyin.html
-    f0, _, _ = librosa.pyin(y, sr = sr, frame_length=frame_length, win_length=win_length, hop_length=hop_length, fmin = librosa.note_to_hz('C2'), fmax= librosa.note_to_hz('C5'), center=False, pad_mode='reflect')
-    f0 = np.nan_to_num(f0)
-    return f0
+    y = y.astype(np.float)
+    f0_harvest, t = pw.harvest(y, sr, frame_period = 5.5, f0_floor=71.0, f0_ceil=1000.0)
+    #specのshapeに合わせる
+    f0_size = math.floor((y.shape[0] - win_length) / hop_length) - 1
+    x = np.linspace(0, f0_harvest.shape[0] -1, num= f0_harvest.shape[0])
+    xp = np.linspace(0, f0_harvest.shape[0] -1, num=f0_size)
+    fp = np.interp(xp, x, f0_harvest)
+    return fp
 
 #f0からcf0を推定する
 def convert_continuos_f0(f0):
