@@ -1,3 +1,6 @@
+import logging
+logging.getLogger("h5py").setLevel(logging.ERROR)
+logging.getLogger("matplotlib").setLevel(logging.ERROR)
 import time
 import os
 import random
@@ -52,7 +55,6 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         random.shuffle(self.audiopaths_sid_text)
         self._filter()
 
-    @retry(tries=30, delay=10)
     def _filter(self):
         """
         Filter text & store spec lengths
