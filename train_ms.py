@@ -208,10 +208,15 @@ def run(rank, n_gpus, hps):
   ).cuda(rank)
 
   for epoch in range(epoch_str, sys.maxsize):
-    if rank==0:
-      train_and_evaluate(rank, epoch, hps, [net_g, net_d, hubert], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval], residual_loss)
-    else:
-      train_and_evaluate(rank, epoch, hps, [net_g, net_d, hubert], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, None], None, None, residual_loss)
+    try:
+      if rank==0:
+        train_and_evaluate(rank, epoch, hps, [net_g, net_d, hubert], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, eval_loader], logger, [writer, writer_eval], residual_loss)
+      else:
+        train_and_evaluate(rank, epoch, hps, [net_g, net_d, hubert], [optim_g, optim_d], [scheduler_g, scheduler_d], scaler, [train_loader, None], None, None, residual_loss)
+    except torch.cuda.OutOfMemoryError:
+      logger.warning("torch.cuda.OutOfMemoryError")
+      logger.warning("If this error occurs continuously, change the batch size.")
+      torch.cuda.empty_cache()
     scheduler_g.step()
     scheduler_d.step()
 
