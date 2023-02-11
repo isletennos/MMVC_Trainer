@@ -163,8 +163,9 @@ def run(rank, n_gpus, hps):
       hps.train.learning_rate, 
       betas=hps.train.betas, 
       eps=hps.train.eps)
-  net_g = parallel(net_g, device_ids=[rank])
-  net_d = parallel(net_d, device_ids=[rank])
+  #modelを変更した場合、"必ず" find_unused_parameters=TrueをFalseにして、計算されていない勾配グラフがあるか確認すること！
+  net_g = parallel(net_g, device_ids=[rank],find_unused_parameters=True)
+  net_d = parallel(net_d, device_ids=[rank],find_unused_parameters=True)
   #処理速度を取るか(CPU処理)、GPUメモリを取るか…
   hubert = torch.hub.load("bshall/hubert:main", "hubert_soft").cuda(rank)
 
