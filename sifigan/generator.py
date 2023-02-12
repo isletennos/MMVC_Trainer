@@ -285,7 +285,7 @@ class SiFiGANGenerator(nn.Module):
         def _reset_parameters(m):
             if isinstance(m, (nn.Conv1d, nn.ConvTranspose1d)):
                 m.weight.data.normal_(0.0, 0.01)
-                logger.debug(f"Reset parameters in {m}.")
+                #logger.debug(f"Reset parameters in {m}.")
 
         self.apply(_reset_parameters)
 
@@ -294,7 +294,7 @@ class SiFiGANGenerator(nn.Module):
 
         def _remove_weight_norm(m):
             try:
-                logger.debug(f"Weight norm is removed from {m}.")
+                #logger.debug(f"Weight norm is removed from {m}.")
                 nn.utils.remove_weight_norm(m)
             except ValueError:  # this module didn't have weight norm
                 return
@@ -307,6 +307,6 @@ class SiFiGANGenerator(nn.Module):
         def _apply_weight_norm(m):
             if isinstance(m, nn.Conv1d) or isinstance(m, nn.ConvTranspose1d):
                 nn.utils.weight_norm(m)
-                logger.debug(f"Weight norm is applied to {m}.")
+                #logger.debug(f"Weight norm is applied to {m}.")
 
         self.apply(_apply_weight_norm)
