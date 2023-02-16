@@ -52,7 +52,7 @@ def pd_indexing(x, d, dilation, batch_index, ch_index):
     return xP[idxP], xF[idxF]
 
 
-def index_initial(n_batch, n_ch, tensor=True):
+def index_initial(n_batch, n_ch, tensor=True, device="cuda"):
     """Tensor batch and channel index initialization.
 
     Args:
@@ -77,6 +77,6 @@ def index_initial(n_batch, n_ch, tensor=True):
         batch_index = torch.tensor(batch_index)
         ch_index = torch.tensor(ch_index)
         if torch.cuda.is_available():
-            batch_index = batch_index.cuda()
-            ch_index = ch_index.cuda()
+            batch_index = batch_index.to(device)
+            ch_index = ch_index.to(device)
     return batch_index, ch_index
