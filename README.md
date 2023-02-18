@@ -234,7 +234,6 @@ https://github.com/isletennos/MMVC_Client
 下記サイトをご参考ください。  
 不明な点がございましたら、以下のdiscordまでお問い合わせください。  
 https://github.com/isletennos/MMVC_Trainer/wiki/FAQ  
-https://mmvc.readthedocs.io/ja/latest/index.html  
 
 ## MMVCコミュニティサーバ(discord)
 開発の最新情報や、不明点のお問合せ、MMVCの活用法などMMVCに関するコミュニティサーバです。  
