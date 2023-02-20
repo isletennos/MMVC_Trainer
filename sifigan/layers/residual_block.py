@@ -247,7 +247,7 @@ class AdaptiveResidualBlock(nn.Module):
             Tensor: Output tensor (B, channels, T).
 
         """
-        batch_index, ch_index = index_initial(x.size(0), self.channels)
+        batch_index, ch_index = index_initial(x.size(0), self.channels, device=x.device)
         for i, dilation in enumerate(self.dilations):
             xt = self.nonlinears[i](x)
             xP, xF = pd_indexing(xt, d, dilation, batch_index, ch_index)
