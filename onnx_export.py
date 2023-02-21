@@ -169,13 +169,19 @@ def main(args):
         (dummy_specs, dummy_lengths, dummy_sin, dummy_d0, dummy_d1, dummy_d2, dummy_d3, dummy_sid_src, dummy_sid_tgt),
         onnx_file,
         do_constant_folding=False,
-        opset_version=13,
+        #opset_version=13,
+        opset_version=17,
         verbose=False,
         #input_names=["specs", "lengths", "sin", "d", "sid_src", "sid_tgt"],
         input_names=["specs", "lengths", "sin", "d0", "d1", "d2", "d3", "sid_src", "sid_tgt"],
         output_names=["audio"],
         dynamic_axes={
             "specs": {2: "length"}
+            #"sin": {2: "length"},
+            #"d0": {2: "length"},
+            #"d1": {2: "length"},
+            #"d2": {2: "length"},
+            #"d3": {2: "length"}
         })
     model_onnx2 = onnx.load(onnx_file)
     model_simp, check = simplify(model_onnx2)

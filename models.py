@@ -1,5 +1,6 @@
 import copy
 import math
+import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -13,6 +14,7 @@ from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from commons import init_weights, get_padding
 from mel_processing import spectrogram_torch_data
 from sifigan.generator import SiFiGANGenerator
+from sifigan.utils import dilated_factor
 
 class TextEncoder(nn.Module):
   def __init__(self,
@@ -352,7 +354,9 @@ class SynthesizerTrn(nn.Module):
       self.emb_g = nn.Embedding(n_speakers, gin_channels)
       self.emb_g.requires_grad = requires_grad_emb_g
 
-  def forward(self, x, x_lengths, y, y_lengths, sin, d, slice_id, sid=None, target_ids=None):
+  def forward(self, x, x_lengths, y, y_lengths, f0, slice_id, sid=None, target_ids=None):
+    sin, d = self.make_sin_d(f0)
+
     x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
     #target sid 作成
     target_sids = self.make_random_target_sids(target_ids, sid)
@@ -387,6 +391,33 @@ class SynthesizerTrn(nn.Module):
     tgt_o = self.dec(sin, tgt_z_slice, d, sid=tgt_g)
 
     return (o, tgt_o), slice_id, x_mask, y_mask, ((z, z_p, m_p), logs_p, m_q, logs_q)
+
+  def make_sin_d(self, f0, dense_factors=[0.5, 1, 4, 8], upsample_scales=[8, 4, 2, 2], sample_rate=24000):
+    # f0 から sin と d を作成
+    # f0 は [b, t] であることを想定
+    # sin は [b, 1, t] であることを想定
+    # d は [b, 1, t] であることを想定
+    prod_upsample_scales = np.cumprod(upsample_scales)
+    dfs_batch = [[] for _ in range(len(dense_factors))]
+    dfs = []
+    for df, us in zip(dense_factors, prod_upsample_scales):
+      dfs += [np.repeat(dilated_factor(torch.unsqueeze(f0, dim=1).to('cpu').detach().numpy(), sample_rate, df), us)]
+
+    for i in range(len(dense_factors)):
+      dfs_batch[i] += [
+          dfs[i].astype(np.float32).reshape(-1, 1)
+      ]  # [(T', 1), ...]
+    # dfsを転置
+    for i in range(len(dense_factors)):
+      dfs_batch[i] = torch.FloatTensor(np.array(dfs_batch[i])).transpose(
+          2, 1
+      )  # (B, 1, T')
+
+    f0_padded = torch.FloatTensor(len(batch), 1, self.max_frames)
+    f0_padded[i, :, :f0.size(0)] = f0[i, :, :] # f0.size(0) は0のdimでいいの？
+    in_batch = self.signal_generator(f0_padded)
+
+    return in_batch, dfs_batch
 
   def make_random_target_sids(self, target_ids, sid):
     # target_sids は target_ids をランダムで埋める
