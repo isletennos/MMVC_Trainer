@@ -7,16 +7,6 @@ Welcome to MMVC !
 ================================
 
 MMVCの公式ドキュメントはgithub wikiへと移行しました。  
-github wiki は`こちら <https://github.com/isletennos/MMVC_Trainer/wiki>`_ になります。  
-------------------------------------------------------------------------------------------------
 
-.. toctree::
-   :maxdepth: 10
-   :caption: Contents:
-   :numbered:
-
-   .. ./chap1/chap1
-   .. ./chap2/chap2
-   .. ./chap3/chap3
-   .. ./chap4/chap4
-   .. ./chap5/chap5
+github wiki は
+`こちら <https://github.com/isletennos/MMVC_Trainer/wiki>`_ になります。  
