@@ -259,7 +259,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
     with autocast(enabled=hps.train.fp16_run):
       (outs, tgt_outs), ids_slice, _, z_mask,\
-        ((z, z_p, m_p), logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, sin, d, slice_id, speakers, target_ids)
+        ((z, z_p, m_p), logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, sin, d, f0, slice_id, speakers, target_ids)
       y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
     y_hat, y_reg = outs
     tgt_y_hat, tgt_y_reg = tgt_outs

@@ -412,24 +412,26 @@ class SynthesizerTrn(nn.Module):
     # d は [b, 1, t] であることを想定
     batch_size = specs.size(0)
     device = specs.device
-    f0 = f0.to(torch.float)
     dense_factors = torch.tensor(dense_factors).to(device)
     upsample_scales = torch.tensor(upsample_scales).to(device)
     prod_upsample_scales = torch.cumprod(upsample_scales, dim=0)
-    dfs_batch = [[] for _ in range(len(dense_factors))]
-    dfs = []
+    #dfs_batch = [[] for _ in range(len(dense_factors))]
+    dfs_batch = []
     for df, us in zip(dense_factors, prod_upsample_scales):
-      dfs += [torch.repeat_interleave(dilated_factor_torch(torch.unsqueeze(f0, dim=1), sample_rate, df), us)]
+      #dfs += [torch.repeat_interleave(dilated_factor_torch(torch.unsqueeze(f0, dim=1), sample_rate, df), us)]
+      df = dilated_factor_torch(f0, sample_rate, df)
+      dfs = torch.repeat_interleave(df, us, dim=2)
+      dfs_batch += [dfs]
 
-    for i in range(len(dense_factors)):
-      dfs_batch[i] += [dfs[i].reshape(-1, 1)]  # [(T', 1), ...]
+    #for i in range(len(dense_factors)):
+    #  dfs_batch[i] += [dfs[i].reshape(-1, 1)]  # [(T', 1), ...]
     # dfsを転置
     #for i in range(len(dense_factors)):
     #  dfs_batch[i] = dfs_batch[i].transpose(2, 1)  # (B, 1, T')
 
     max_frames = segment_size // hop_size
-    f0_padded = torch.FloatTensor(batch_size, 1, max_frames).to(device)
-    f0_padded[i, :, :f0.size(0)] = f0 * f0_scale
+    f0_padded = f0[:, :, :max_frames]
+    f0_padded = f0_padded * f0_scale
     signal_generator = SignalGenerator(
         sample_rate=sample_rate,
         hop_size=hop_size,
