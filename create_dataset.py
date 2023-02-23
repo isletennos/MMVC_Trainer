@@ -25,6 +25,7 @@ VAL_PER = 20
 FRAME_LENGTH = 512
 WIN_LENGTH = 256
 HOP_LENGTH = 128
+UNITS_BASE_PATH = "dataset_etc"
 
 #pyworld Harvest を使ってf0を推定する
 def get_f0(wav_path, frame_length=FRAME_LENGTH, win_length=WIN_LENGTH, hop_length=HOP_LENGTH):
@@ -77,12 +78,13 @@ def convert_continuos_f0(f0):
 def create_cf0(wav_path, d_):
     filename = os.path.basename(wav_path)
     d = os.path.basename(d_)
-    save_path = "cF0/{}/{}".format(d , filename[:-4])
-    load_path = "F0/{}/{}".format(d , filename[:-4] + ".npy")
+    save_path = "{}/cF0/{}/{}".format(UNITS_BASE_PATH, d , filename[:-4])
+    load_path = "{}/F0/{}/{}".format(UNITS_BASE_PATH, d , filename[:-4] + ".npy")
     print(load_path)
     f0 = np.load(load_path)
-    os.makedirs("cF0", exist_ok=True)
-    os.makedirs("cF0/{}".format(d), exist_ok=True)
+    os.makedirs(UNITS_BASE_PATH, exist_ok=True)
+    os.makedirs("{}/cF0".format(UNITS_BASE_PATH), exist_ok=True)
+    os.makedirs("{}/cF0/{}".format(UNITS_BASE_PATH, d), exist_ok=True)
     if os.path.isfile(save_path+ ".npy"):
         cf0 = np.load(save_path+ ".npy")
     else:
@@ -94,9 +96,10 @@ def create_cf0(wav_path, d_):
 def create_f0(wav_path, d_):
     filename = os.path.basename(wav_path)
     d = os.path.basename(d_)
-    save_path = "F0/{}/{}".format(d , filename[:-4])
-    os.makedirs("F0", exist_ok=True)
-    os.makedirs("F0/{}".format(d), exist_ok=True)
+    save_path = "{}/F0/{}/{}".format(UNITS_BASE_PATH, d , filename[:-4])
+    os.makedirs(UNITS_BASE_PATH, exist_ok=True)
+    os.makedirs("{}/F0".format(UNITS_BASE_PATH), exist_ok=True)
+    os.makedirs("{}/F0/{}".format(UNITS_BASE_PATH,d), exist_ok=True)
     if os.path.isfile(save_path+ ".npy"):
         pass
     else:
@@ -108,9 +111,10 @@ def create_f0(wav_path, d_):
 def mozi2phone(hubert, wav_path, d_):
     filename = os.path.basename(wav_path)
     d = os.path.basename(d_)
-    save_path = "units/{}/{}".format(d , filename[:-4])
-    os.makedirs("units", exist_ok=True)
-    os.makedirs("units/{}".format(d), exist_ok=True)
+    save_path = "{}/units/{}/{}".format(UNITS_BASE_PATH, d , filename[:-4])
+    os.makedirs(UNITS_BASE_PATH, exist_ok=True)
+    os.makedirs("{}/units".format(UNITS_BASE_PATH), exist_ok=True)
+    os.makedirs("{}/units/{}".format(UNITS_BASE_PATH,d), exist_ok=True)
 
     if os.path.isfile(save_path+ ".npy"):
         pass
