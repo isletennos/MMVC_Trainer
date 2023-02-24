@@ -242,15 +242,14 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
   spec_segment_size = hps.train.segment_size // hps.data.hop_length
   target_ids = torch.tensor(train_loader.dataset.get_all_sid())
 
-  for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers, f0, f0_lengths, sin, d, slice_id) in enumerate(tqdm(train_loader, desc="Epoch {}".format(epoch))):
+  for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers, f0, f0_lengths, cf0, cf0_lengths, slice_id) in enumerate(tqdm(train_loader, desc="Epoch {}".format(epoch))):
     x, x_lengths = x.cuda(rank, non_blocking=True), x_lengths.cuda(rank, non_blocking=True)
     spec, spec_lengths = spec.cuda(rank, non_blocking=True), spec_lengths.cuda(rank, non_blocking=True)
     y, y_lengths = y.cuda(rank, non_blocking=True), y_lengths.cuda(rank, non_blocking=True)
     speakers = speakers.cuda(rank, non_blocking=True)
     #SiFiGAN
     f0, f0_lengths = f0.cuda(rank, non_blocking=True), f0_lengths.cuda(rank, non_blocking=True)
-    sin = sin.cuda(rank, non_blocking=True)
-    d = tuple([d[:1].cuda(rank, non_blocking=True) for d in d])
+    cf0, cf0_lengths = cf0.cuda(rank, non_blocking=True), cf0_lengths.cuda(rank, non_blocking=True)
     slice_id = slice_id.cuda(rank, non_blocking=True)
 
     mel = spec_to_mel_torch_data(spec, hps.data)
@@ -259,7 +258,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
     with autocast(enabled=hps.train.fp16_run):
       (outs, tgt_outs), ids_slice, _, z_mask,\
-        ((z, z_p, m_p), logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, sin, d, f0, slice_id, speakers, target_ids)
+        ((z, z_p, m_p), logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, f0, slice_id, speakers, target_ids)
       y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
     y_hat, y_reg = outs
     tgt_y_hat, tgt_y_reg = tgt_outs

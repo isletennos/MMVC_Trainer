@@ -355,8 +355,8 @@ class SynthesizerTrn(nn.Module):
       self.emb_g = nn.Embedding(n_speakers, gin_channels)
       self.emb_g.requires_grad = requires_grad_emb_g
 
-  def forward(self, x, x_lengths, y, y_lengths, sin, d, f0, slice_id, sid=None, target_ids=None):
-    sin_torch, d_torch = self.make_sin_d(f0, y)
+  def forward(self, x, x_lengths, y, y_lengths, f0, slice_id, sid=None, target_ids=None):
+    sin, d = self.make_sin_d(f0, y)
 
     x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
     #target sid 作成

@@ -328,8 +328,8 @@ class TextAudioSpeakerCollate():
             in_batch = self.signal_generator(f0_padded)
 
         if self.return_ids:
-            return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, ids_sorted_decreasing, f0_padded, f0_lengths, in_batch, dfs_batch, slice_id
-        return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, f0_padded, f0_lengths, in_batch, dfs_batch, slice_id
+            return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, ids_sorted_decreasing, f0_padded, f0_lengths, cf0_padded, cf0_lengths, slice_id
+        return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, f0_padded, f0_lengths, cf0_padded, cf0_lengths, slice_id
 
 
 class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
