@@ -117,7 +117,7 @@ class SignalGenerator:
             if not signal_type in ["noise", "sine", "sines", "uv"]:
                 logger.info(f"{signal_type} is not supported type for generator input.")
                 sys.exit(0)
-        logger.info(f"Use {signal_types} for generator input signals.")
+        #logger.info(f"Use {signal_types} for generator input signals.")
 
     @torch.no_grad()
     def __call__(self, f0, f0_scale = 1.0):
