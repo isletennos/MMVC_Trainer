@@ -20,8 +20,6 @@ import pytz
 import time
 from tqdm import tqdm
 import torch, torchaudio
-import librosa
-import numpy as np
 
 import commons
 import utils

@@ -407,10 +407,9 @@ class SynthesizerTrn(nn.Module):
     signal_types=["sine"]
     ):
     # f0 から sin と d を作成
-    # f0 は [b, t] であることを想定
+    # f0 は [b, 1, t] であることを想定
     # sin は [b, 1, t] であることを想定
-    # d は [b, 1, t] であることを想定
-    batch_size = specs.size(0)
+    # d は [4][b, 1, t] であることを想定
     device = specs.device
     dense_factors = torch.tensor(dense_factors).to(device)
     upsample_scales = torch.tensor(upsample_scales).to(device)
