@@ -28,28 +28,22 @@ def pd_indexing(x, d, dilation, batch_index, ch_index):
     dilations = d * dilation
 
     # get past index
-    idxP = torch.arange(-batch_length, 0).float()
-    idxP = idxP.to(x.device)
-    idxP = torch.add(-dilations, idxP)
-    idxP = idxP.round().long()
-    maxP = -((torch.min(idxP) + batch_length))
-    assert maxP >= 0
+    B, C, T = x.size()
+    batch_index = torch.arange(0, B, dtype=torch.long, device=x.device).reshape(B, 1, 1)
+    ch_index = torch.arange(0, C, dtype=torch.long, device=x.device).reshape(1, C, 1)
+    dilations = torch.clamp((d * dilation).long(), min=1)
+
+    # get past index (assume reflect padding)
+    idx_base = torch.arange(0, T, dtype=torch.long, device=x.device).reshape(1, 1, T)
+    idxP = (idx_base - dilations).abs() % T
     idxP = (batch_index, ch_index, idxP)
-    # padding past tensor
-    xP = pad1d((maxP, 0), 0)(x)
-
-    # get future index
-    idxF = torch.arange(0, batch_length).float()
-    idxF = idxF.to(x.device)
-    idxF = torch.add(dilations, idxF)
-    idxF = idxF.round().long()
-    maxF = torch.max(idxF) - (batch_length - 1)
-    assert maxF >= 0
+    
+    # get future index (assume reflect padding)
+    idxF = idx_base + dilations
+    overflowed = idxF >= T
+    idxF[overflowed] = -(idxF[overflowed] % T)
     idxF = (batch_index, ch_index, idxF)
-    # padding future tensor
-    xF = pad1d((0, maxF), 0)(x)
-
-    return xP[idxP], xF[idxF]
+    return x[idxP], x[idxF]
 
 
 def index_initial(n_batch, n_ch, tensor=True, device="cuda"):

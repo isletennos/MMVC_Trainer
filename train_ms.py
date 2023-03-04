@@ -250,7 +250,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     #SiFiGAN
     f0, f0_lengths = f0.cuda(rank, non_blocking=True), f0_lengths.cuda(rank, non_blocking=True)
     sin = sin.cuda(rank, non_blocking=True)
-    d = tuple([d[:1].cuda(rank, non_blocking=True) for d in d])
+    d = tuple([d.cuda(rank, non_blocking=True) for d in d])
     slice_id = slice_id.cuda(rank, non_blocking=True)
 
     mel = spec_to_mel_torch_data(spec, hps.data)
@@ -409,7 +409,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger, hubert, residual_
         speakers = speakers.cuda(0)
         f0, f0_lengths = f0.cuda(0), f0_lengths.cuda(0)
         sin = sin.cuda(0)
-        d = tuple([d[:1].cuda(0) for d in d])
+        d = tuple([d.cuda(0) for d in d])
         slice_id = slice_id.cuda(0)
 
         mel = spec_to_mel_torch_data(spec, hps.data)
