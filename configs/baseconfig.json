@@ -81,6 +81,7 @@
     "vc_sample_config": {
       "source_id": 0,
       "target_id": 101,
+      "f0_scale": 2.0,
       "input_filename": "dataset/00_myvoice/wav/xxxx.wav"
     }
   },

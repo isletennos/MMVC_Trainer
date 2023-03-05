@@ -10,7 +10,7 @@ from scipy.io.wavfile import read
 import torch
 import wave
 import csv
-from mel_processing import spec_to_mel_torch_data
+from mel_processing import spec_to_mel_torch_data, spectrogram_torch
 import warnings
 
 MATPLOTLIB_FLAG = False
@@ -107,34 +107,56 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path,
                 'optimizer': optimizer.state_dict(),
                 'learning_rate': learning_rate}, checkpoint_path)
 
-
 def save_vc_sample(hps, loader, collate, generator, name):
-  if not hasattr(hps.others, "input_filename"):
+  if not hasattr(hps.others.vc_sample_config, "input_filename"):
     return
 
-  input_filename = hps.others.input_filename
-  source_id = hps.others.source_id
-  target_ids = hps.others.target_id
+  input_filename = hps.others.vc_sample_config.input_filename
+  input_filename_base = input_filename.split("/")[-1].split(".")[0]
+  input_filename_id = input_filename.split("/")[1]
+  dummy = "dataset_etc/units/" + input_filename_id + "/" + input_filename_base + ".npy"
+  f0 = "dataset_etc/F0/" + input_filename_id + "/" + input_filename_base + ".npy"
+  cf0 = "dataset_etc/cF0/" + input_filename_id + "/" + input_filename_base + ".npy"
+  source_id = hps.others.vc_sample_config.source_id
+  target_ids = hps.others.vc_sample_config.target_id
+  f0_scale = hps.others.vc_sample_config.f0_scale
 
   if type(target_ids) != list:
     target_ids = [target_ids]
 
-  dataset = loader("", hps.data, no_use_textfile=True, disable_tqdm=True)
-  data = dataset.get_audio_text_speaker_pair([input_filename, source_id, "a", "0"])
-  data = collate()([data])
-  x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src, note, note_lengths = [x.cuda(0) for x in data]
-  mel = spec_to_mel_torch_data(spec, hps.data)
-  if hps.model.use_mel_train:
-    spec = mel
+  dataset = loader(hps.data.training_files_notext, hps.data, disable_tqdm=True)
+  data = dataset.get_audio_text_speaker_pair([input_filename, source_id, dummy, f0, cf0])
+
+  data = collate(
+    sample_rate = hps.data.sampling_rate,
+    segment_size = hps.train.segment_size,
+    hop_size = hps.data.hop_length,
+    df_f0_type = hps.data.df_f0_type,
+    dense_factors = hps.data.dense_factors,
+    upsample_scales = hps.model.upsample_rates,
+    sine_amp = hps.data.sine_amp,
+    noise_amp = hps.data.noise_amp,
+    sine_f0_type = hps.data.sine_f0_type,
+    signal_types = hps.data.signal_types,
+    train = False,
+    f0_factor = f0_scale,
+  )([data])
+  x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src, f0, f0_lengths, sin, d, slice_id = [x for x in data]
   for target_id in target_ids:
     with torch.no_grad():
       sid_tgt = torch.LongTensor([target_id]).cuda(0)
-      audio = generator.module.voice_conversion(spec, spec_lengths, sid_src=sid_src, sid_tgt=sid_tgt)[0][0,0].data.cpu().float().numpy()
+      sid_src = torch.LongTensor([sid_src]).cuda(0)
+      spec = spec.cuda(0)
+      spec_lengths = spec_lengths.cuda(0)
+      sin = sin.cuda(0)
+      d = tuple([d.cuda(0, non_blocking=True) for d in d])
+      audio = generator.module.voice_conversion(spec, spec_lengths, sin, d, sid_src=sid_src, sid_tgt=sid_tgt)[0][0,0].data.cpu().float().numpy()
 
     audio = audio * hps.data.max_wav_value
     wav = audio.astype(np.int16).tobytes()
 
     output_filename = os.path.join(hps.model_dir, f"vc_{target_id}_{name}.wav")
+    print(output_filename)
     with wave.open(output_filename, 'wb') as fh:
       fh.setnchannels(1)
       fh.setsampwidth(2)
