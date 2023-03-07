@@ -14,7 +14,7 @@ from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from commons import init_weights, get_padding
 from mel_processing import spectrogram_torch_data
 from sifigan.generator import SiFiGANGenerator
-from sifigan.utils import dilated_factor_torch
+from sifigan.utils import dilated_factor
 from sifigan.utils import SignalGenerator
 
 class TextEncoder(nn.Module):
@@ -350,13 +350,19 @@ class SynthesizerTrn(nn.Module):
         n_flows=n_flow, 
         gin_channels=gin_channels,
         requires_grad=requires_grad_flow)
+    self.signal_generator = SignalGenerator(
+        sample_rate=24000,
+        hop_size=128,
+        noise_amp=0.0,
+        signal_types=["sine"]
+    )
 
     if n_speakers > 1:
       self.emb_g = nn.Embedding(n_speakers, gin_channels)
       self.emb_g.requires_grad = requires_grad_emb_g
 
   def forward(self, x, x_lengths, y, y_lengths, f0, slice_id, sid=None, target_ids=None):
-    sin, d = self.make_sin_d(f0, y)
+    sin, d = self.make_sin_d(f0)
 
     x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
     #target sid 作成
@@ -394,51 +400,34 @@ class SynthesizerTrn(nn.Module):
     return (o, tgt_o), slice_id, x_mask, y_mask, ((z, z_p, m_p), logs_p, m_q, logs_q)
 
   def make_sin_d(self,
-    f0,
-    specs, # batch_sizeとdeviceを取得するために必要
-    f0_scale=1.0,
-    segment_size=8192,
-    hop_size=128,
-    sample_rate=24000,
-    dense_factors=[0.5, 1, 4, 8],
-    upsample_scales=[8, 4, 2, 2],
-    sine_amp=0.1,
-    noise_amp=0.003,
-    signal_types=["sine"]
+      f0,
+      f0_scale=1.0,
+      segment_size=8192,
+      hop_size=128,
+      sample_rate=24000,
+      dense_factors=[0.5, 1, 4, 8],
+      upsample_scales=[8, 4, 2, 2]
     ):
     # f0 から sin と d を作成
-    # f0 は [b, 1, t] であることを想定
-    # sin は [b, 1, t] であることを想定
-    # d は [4][b, 1, t] であることを想定
-    device = specs.device
-    dense_factors = torch.tensor(dense_factors).to(device)
-    upsample_scales = torch.tensor(upsample_scales).to(device)
-    prod_upsample_scales = torch.cumprod(upsample_scales, dim=0)
-    #dfs_batch = [[] for _ in range(len(dense_factors))]
+    # f0 : [b, 1, t]
+    # sin : [b, 1, t]
+    # d : [4][b, 1, t]
+    #dense_factors = torch.tensor(dense_factors).to(device)
+    #upsample_scales = torch.tensor(upsample_scales).to(device)
+    #prod_upsample_scales = torch.cumprod(upsample_scales, dim=0)
+    prod_upsample_scales = np.cumprod(upsample_scales)
     dfs_batch = []
     for df, us in zip(dense_factors, prod_upsample_scales):
-      #dfs += [torch.repeat_interleave(dilated_factor_torch(torch.unsqueeze(f0, dim=1), sample_rate, df), us)]
-      df = dilated_factor_torch(f0, sample_rate, df)
-      dfs = torch.repeat_interleave(df, us, dim=2)
-      dfs_batch += [dfs]
-
-    #for i in range(len(dense_factors)):
-    #  dfs_batch[i] += [dfs[i].reshape(-1, 1)]  # [(T', 1), ...]
-    # dfsを転置
-    #for i in range(len(dense_factors)):
-    #  dfs_batch[i] = dfs_batch[i].transpose(2, 1)  # (B, 1, T')
+      dilated_tensor = dilated_factor(f0, sample_rate, df)
+      #result += [torch.repeat_interleave(dilated_tensor, us, dim=1)]
+      result = [torch.stack([dilated_tensor for _ in range(us)], -1).reshape(dilated_tensor.shape[0], -1)]
+      #dfs_batch += [result]
+      dfs_batch.append(torch.cat(result, dim=0).unsqueeze(1))
 
     max_frames = segment_size // hop_size
     f0_padded = f0[:, :, :max_frames]
     f0_padded = f0_padded * f0_scale
-    signal_generator = SignalGenerator(
-        sample_rate=sample_rate,
-        hop_size=hop_size,
-        sine_amp=sine_amp,
-        noise_amp=noise_amp,
-        signal_types=signal_types,
-    )
-    in_batch = signal_generator(f0_padded)
+    in_batch = self.signal_generator(f0_padded)
 
     return in_batch, dfs_batch
 
