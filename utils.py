@@ -110,6 +110,8 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path,
 def save_vc_sample(hps, loader, collate, generator, name):
   if not hasattr(hps.others.vc_sample_config, "input_filename"):
     return
+  if not hps.others.create_vc_sample:
+    return
 
   input_filename = hps.others.vc_sample_config.input_filename
   input_filename_base = input_filename.split("/")[-1].split(".")[0]
