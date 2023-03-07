@@ -6,7 +6,6 @@
 """Indexing-related functions."""
 
 import torch
-from torch.nn import ConstantPad1d as pad1d
 
 
 def pd_indexing(x, d, dilation, batch_index, ch_index):
@@ -24,10 +23,6 @@ def pd_indexing(x, d, dilation, batch_index, ch_index):
         Tensor: Future output tensor (B, out_channels, T)
 
     """
-    (_, _, batch_length) = d.size()
-    dilations = d * dilation
-
-    # get past index
     B, C, T = x.size()
     batch_index = torch.arange(0, B, dtype=torch.long, device=x.device).reshape(B, 1, 1)
     ch_index = torch.arange(0, C, dtype=torch.long, device=x.device).reshape(1, C, 1)
@@ -43,6 +38,7 @@ def pd_indexing(x, d, dilation, batch_index, ch_index):
     overflowed = idxF >= T
     idxF[overflowed] = -(idxF[overflowed] % T)
     idxF = (batch_index, ch_index, idxF)
+
     return x[idxP], x[idxF]
 
 
