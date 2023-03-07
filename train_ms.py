@@ -248,8 +248,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     #SiFiGAN
     f0, f0_lengths = f0.cuda(rank, non_blocking=True), f0_lengths.cuda(rank, non_blocking=True)
     cf0, cf0_lengths = cf0.cuda(rank, non_blocking=True), cf0_lengths.cuda(rank, non_blocking=True)
-    sin = sin.cuda(rank, non_blocking=True)
-    d = tuple([d.cuda(rank, non_blocking=True) for d in d])
+    #sin = sin.cuda(rank, non_blocking=True)
+    #d = tuple([d.cuda(rank, non_blocking=True) for d in d])
     slice_id = slice_id.cuda(rank, non_blocking=True)
 
     mel = spec_to_mel_torch_data(spec, hps.data)
@@ -401,14 +401,15 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger, hubert, residual_
 
     with torch.no_grad():
       #evalのデータセットを一周する
-      for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers, f0, f0_lengths, sin, d, slice_id) in enumerate(tqdm(eval_loader, desc="Epoch {}".format("eval"))):
+      for batch_idx, (x, x_lengths, spec, spec_lengths, y, y_lengths, speakers, f0, f0_lengths, cf0, cf0_lengths, slice_id) in enumerate(tqdm(eval_loader, desc="Epoch {}".format("eval"))):
         x, x_lengths = x.cuda(0), x_lengths.cuda(0)
         spec, spec_lengths = spec.cuda(0), spec_lengths.cuda(0)
         y, y_lengths = y.cuda(0), y_lengths.cuda(0)
         speakers = speakers.cuda(0)
         f0, f0_lengths = f0.cuda(0), f0_lengths.cuda(0)
-        sin = sin.cuda(0)
-        d = tuple([d.cuda(0) for d in d])
+        cf0, cf0_lengths = cf0.cuda(0), cf0_lengths.cuda(0)
+        #sin = sin.cuda(0)
+        #d = tuple([d.cuda(0) for d in d])
         slice_id = slice_id.cuda(0)
 
         mel = spec_to_mel_torch_data(spec, hps.data)
@@ -419,7 +420,7 @@ def evaluate(hps, generator, eval_loader, writer_eval, logger, hubert, residual_
           with autocast(enabled=hps.train.fp16_run):
             #Generator
             (outs, tgt_outs), ids_slice, _, z_mask,\
-            ((z, z_p, m_p), logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, sin, d, slice_id, speakers, target_ids)
+            ((z, z_p, m_p), logs_p, m_q, logs_q) = generator(x, x_lengths, spec, spec_lengths, f0, slice_id, speakers, target_ids)
           y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
           y_hat, y_reg = outs
           tgt_y_hat, tgt_y_reg = tgt_outs
