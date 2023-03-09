@@ -444,8 +444,10 @@ class SynthesizerTrn(nn.Module):
         target_sids[i] = source_id
     return target_sids
 
-  def voice_conversion(self, y, y_lengths, sin, d, sid_src, sid_tgt):
+  def voice_conversion(self, y, y_lengths, f0, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
+
+    sin, d = self.make_sin_d(f0)
     g_src = self.emb_g(sid_src).unsqueeze(-1)
     g_tgt = self.emb_g(sid_tgt).unsqueeze(-1)
     z, _, _, y_mask = self.enc_q(y, y_lengths, g=g_src)
