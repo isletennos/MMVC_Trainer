@@ -3,7 +3,7 @@ Cython==0.29.21
 librosa==0.8.0
 matplotlib==3.3.1
 phonemizer==2.2.1
-scipy==1.5.2
+scipy
 tensorboard==2.3.0
 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 torch==1.10.2+cu113
