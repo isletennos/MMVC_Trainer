@@ -402,8 +402,6 @@ class SynthesizerTrn(nn.Module):
   def make_sin_d(self,
       f0,
       f0_scale=1.0,
-      segment_size=8192,
-      hop_size=128,
       sample_rate=24000,
       dense_factors=[0.5, 1, 4, 8],
       upsample_scales=[8, 4, 2, 2]
@@ -424,10 +422,7 @@ class SynthesizerTrn(nn.Module):
       #dfs_batch += [result]
       dfs_batch.append(torch.cat(result, dim=0).unsqueeze(1))
 
-    max_frames = segment_size // hop_size
-    f0_padded = f0[:, :, :max_frames]
-    f0_padded = f0_padded * f0_scale
-    in_batch = self.signal_generator(f0_padded)
+    in_batch = self.signal_generator(f0 * f0_scale)
 
     return in_batch, dfs_batch
 
