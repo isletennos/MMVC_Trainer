@@ -441,7 +441,6 @@ class SynthesizerTrn(nn.Module):
 
   def voice_conversion(self, y, y_lengths, f0, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
-
     sin, d = self.make_sin_d(f0)
     g_src = self.emb_g(sid_src).unsqueeze(-1)
     g_tgt = self.emb_g(sid_tgt).unsqueeze(-1)
