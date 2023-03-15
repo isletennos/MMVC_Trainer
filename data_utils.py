@@ -245,9 +245,6 @@ class TextAudioSpeakerCollate():
         f0_padded.zero_()
         cf0_padded.zero_()
 
-        #dfs
-        dfs_batch = [[] for _ in range(len(self.dense_factors))]
-
         for i in range(len(ids_sorted_decreasing)):
             row = batch[ids_sorted_decreasing[i]]
 
@@ -281,15 +278,6 @@ class TextAudioSpeakerCollate():
                 cf0_padded[i, :, :cf0.size(0)] = cf0[start_frame : start_frame + self.max_frames]
                 cf0_lengths[i] = cf0.size(0)
 
-                #dfs
-                dfs = []
-                #dilated_factor の入力はnumpy!!
-                for df, us in zip(self.dense_factors, self.prod_upsample_scales):
-                    dfs += [
-                            np.repeat(dilated_factor(torch.unsqueeze(cf0[start_frame : start_frame + self.max_frames], dim=1).to('cpu').detach().numpy(), self.sample_rate, df), us)
-                            if self.df_f0_type == "cf0"
-                            else np.repeat(dilated_factor(torch.unsqueeze(f0[start_frame : start_frame + self.max_frames], dim=1).to('cpu').detach().numpy(), self.sample_rate, df), us)
-                        ]
             #推論時 f0/cf0にf0の倍率を乗算してf0/cf0を求める
             else:
                 f0 = row[4] * self.f0_factor
@@ -300,36 +288,9 @@ class TextAudioSpeakerCollate():
                 cf0_padded[i, :, :cf0.size(0)] = cf0
                 cf0_lengths[i] = cf0.size(0)
 
-                #dfs
-                dfs = []
-                #dilated_factor の入力はnumpy!!
-                for df, us in zip(self.dense_factors, self.prod_upsample_scales):
-                    dfs += [
-                            np.repeat(dilated_factor(torch.unsqueeze(cf0, dim=1).to('cpu').detach().numpy(), self.sample_rate, df), us)
-                            if self.df_f0_type == "cf0"
-                            else np.repeat(dilated_factor(torch.unsqueeze(f0, dim=1).to('cpu').detach().numpy(), self.sample_rate, df), us)
-                        ]
-            
-            #よくわからないけど、後で論文ちゃんと読む
-            for i in range(len(self.dense_factors)):
-                dfs_batch[i] += [
-                    dfs[i].astype(np.float32).reshape(-1, 1)
-                ]  # [(T', 1), ...]
-        #よくわからないdfsを転置
-        for i in range(len(self.dense_factors)):
-            dfs_batch[i] = torch.FloatTensor(np.array(dfs_batch[i])).transpose(
-                2, 1
-            )  # (B, 1, T')
-        
-        #f0/cf0を実際に使うSignalに変換する
-        if self.sine_f0_type == "cf0":
-            in_batch = self.signal_generator(cf0_padded)
-        elif self.sine_f0_type == "f0":
-            in_batch = self.signal_generator(f0_padded)
-
         if self.return_ids:
-            return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, ids_sorted_decreasing, f0_padded, f0_lengths, in_batch, dfs_batch, slice_id
-        return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, f0_padded, f0_lengths, in_batch, dfs_batch, slice_id
+            return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, ids_sorted_decreasing, f0_padded, f0_lengths, cf0_padded, cf0_lengths, slice_id
+        return text_padded, text_lengths, spec_padded, spec_lengths, wav_padded, wav_lengths, sid, f0_padded, f0_lengths, cf0_padded, cf0_lengths, slice_id
 
 
 class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):

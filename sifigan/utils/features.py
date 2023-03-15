@@ -61,9 +61,8 @@ def dilated_factor(batch_f0, fs, dense_factor):
 
     """
     batch_f0[batch_f0 == 0] = fs / dense_factor
-    dilated_factors = np.ones(batch_f0.shape) * fs / dense_factor / batch_f0
-    assert np.all(dilated_factors > 0)
-
+    dilated_factors = torch.ones_like(batch_f0) * fs / dense_factor / batch_f0
+    #assert np.all(dilated_factors > 0)
     return dilated_factors
 
 
@@ -98,7 +97,7 @@ class SignalGenerator:
             if not signal_type in ["noise", "sine", "sines", "uv"]:
                 logger.info(f"{signal_type} is not supported type for generator input.")
                 sys.exit(0)
-        logger.info(f"Use {signal_types} for generator input signals.")
+        #logger.info(f"Use {signal_types} for generator input signals.")
 
     @torch.no_grad()
     def __call__(self, f0, f0_scale = 1.0):

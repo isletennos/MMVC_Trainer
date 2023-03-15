@@ -72,14 +72,9 @@ def inspect_onnx(session):
 def benchmark(session):
     dummy_specs = torch.rand(1, 257, 64).numpy()
     dummy_lengths = torch.LongTensor([64]).numpy()
+    dummy_f0 = torch.rand(1, 1, 64).numpy()
     dummy_sid_src = torch.LongTensor([0]).numpy()
     dummy_sid_tgt = torch.LongTensor([1]).numpy()
-    dummy_sin = torch.rand(1, 1, 8192).numpy()
-    #dummy_d = [torch.rand(1, 1, 512).numpy(), torch.rand(1, 1, 2048).numpy(), torch.rand(1, 1, 4096).numpy(), torch.rand(1, 1, 8192).numpy()]
-    dummy_d0 = torch.rand(1, 1, 512).numpy()
-    dummy_d1 = torch.rand(1, 1, 2048).numpy()
-    dummy_d2 = torch.rand(1, 1, 4096).numpy()
-    dummy_d3 = torch.rand(1, 1, 8192).numpy()
 
     use_time_list = []
     for i in range(30):
@@ -89,12 +84,7 @@ def benchmark(session):
             {
                 "specs": dummy_specs,
                 "lengths": dummy_lengths,
-                "sin": dummy_sin,
-                #"d": dummy_d,
-                "d0": dummy_d0,
-                "d1": dummy_d1,
-                "d2": dummy_d2,
-                "d3": dummy_d3,
+                "f0": dummy_f0,
                 "sid_src": dummy_sid_src,
                 "sid_tgt": dummy_sid_tgt
             }
@@ -108,14 +98,15 @@ def benchmark(session):
 
 
 class OnnxSynthesizerTrn(SynthesizerTrn):
-    def forward(self, y, y_lengths, sin, d0, d1, d2, d3, sid_src, sid_tgt):
-        return self.voice_conversion(y, y_lengths, sin, (d0, d1, d2, d3), sid_src, sid_tgt)
+    def forward(self, y, lengths, f0, sid_src, sid_tgt):
+        return self.voice_conversion(y, lengths, f0, sid_src, sid_tgt)
 
-    def voice_conversion(self, y, y_lengths, sin, d, sid_src, sid_tgt):
+    def voice_conversion(self, y, lengths, f0, sid_src, sid_tgt):
         assert self.n_speakers > 0, "n_speakers have to be larger than 0."
+        sin, d = self.make_sin_d(f0)
         g_src = self.emb_g(sid_src).unsqueeze(-1)
         g_tgt = self.emb_g(sid_tgt).unsqueeze(-1)
-        z, _, _, y_mask = self.enc_q(y, y_lengths, g=g_src)
+        z, _, _, y_mask = self.enc_q(y, lengths, g=g_src)
         z_p = self.flow(z, y_mask, g=g_src)
         z_hat = self.flow(z_p, y_mask, g=g_tgt, reverse=True)
         o_hat = self.dec(sin, z_hat * y_mask, d, sid=g_tgt)
@@ -155,27 +146,24 @@ def main(args):
     onnx_file = os.path.join(dirname, filenames[0] + ".onnx")
     dummy_specs = torch.rand(1, 257, 64)
     dummy_lengths = torch.LongTensor([64])
+    dummy_f0 = torch.rand(1, 1, 64)
     dummy_sid_src = torch.LongTensor([0])
     dummy_sid_tgt = torch.LongTensor([1])
-    dummy_sin = torch.rand(1, 1, 8192)
-    #dummy_d = [torch.rand(1, 1, 512), torch.rand(1, 1, 2048), torch.rand(1, 1, 4096), torch.rand(1, 1, 8192)]
-    dummy_d0 = torch.rand(1, 1, 512)
-    dummy_d1 = torch.rand(1, 1, 2048)
-    dummy_d2 = torch.rand(1, 1, 4096)
-    dummy_d3 = torch.rand(1, 1, 8192)
+
     torch.onnx.export(
         net_g,
         #(dummy_specs, dummy_lengths, dummy_sin, dummy_d, dummy_sid_src, dummy_sid_tgt),
-        (dummy_specs, dummy_lengths, dummy_sin, dummy_d0, dummy_d1, dummy_d2, dummy_d3, dummy_sid_src, dummy_sid_tgt),
+        (dummy_specs, dummy_lengths, dummy_f0, dummy_sid_src, dummy_sid_tgt),
         onnx_file,
         do_constant_folding=False,
-        opset_version=13,
+        #opset_version=13,
+        opset_version=17,
         verbose=False,
-        #input_names=["specs", "lengths", "sin", "d", "sid_src", "sid_tgt"],
-        input_names=["specs", "lengths", "sin", "d0", "d1", "d2", "d3", "sid_src", "sid_tgt"],
+        input_names=["specs", "lengths", "f0", "sid_src", "sid_tgt"],
         output_names=["audio"],
         dynamic_axes={
-            "specs": {2: "length"}
+            "specs": {2: "specs_length"},
+            "f0": {2: "f0_length"}
         })
     model_onnx2 = onnx.load(onnx_file)
     model_simp, check = simplify(model_onnx2)

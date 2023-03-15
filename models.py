@@ -1,5 +1,6 @@
 import copy
 import math
+import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -13,6 +14,8 @@ from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from commons import init_weights, get_padding
 from mel_processing import spectrogram_torch_data
 from sifigan.generator import SiFiGANGenerator
+from sifigan.utils import dilated_factor
+from sifigan.utils import SignalGenerator
 
 class TextEncoder(nn.Module):
   def __init__(self,
@@ -347,12 +350,20 @@ class SynthesizerTrn(nn.Module):
         n_flows=n_flow, 
         gin_channels=gin_channels,
         requires_grad=requires_grad_flow)
+    self.signal_generator = SignalGenerator(
+        sample_rate=24000,
+        hop_size=128,
+        noise_amp=0.0,
+        signal_types=["sine"]
+    )
 
     if n_speakers > 1:
       self.emb_g = nn.Embedding(n_speakers, gin_channels)
       self.emb_g.requires_grad = requires_grad_emb_g
 
-  def forward(self, x, x_lengths, y, y_lengths, sin, d, slice_id, sid=None, target_ids=None):
+  def forward(self, x, x_lengths, y, y_lengths, f0, slice_id, sid=None, target_ids=None):
+    sin, d = self.make_sin_d(f0)
+
     x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
     #target sid 作成
     target_sids = self.make_random_target_sids(target_ids, sid)
@@ -388,6 +399,33 @@ class SynthesizerTrn(nn.Module):
 
     return (o, tgt_o), slice_id, x_mask, y_mask, ((z, z_p, m_p), logs_p, m_q, logs_q)
 
+  def make_sin_d(self,
+      f0,
+      f0_scale=1.0,
+      sample_rate=24000,
+      dense_factors=[0.5, 1, 4, 8],
+      upsample_scales=[8, 4, 2, 2]
+    ):
+    # f0 から sin と d を作成
+    # f0 : [b, 1, t]
+    # sin : [b, 1, t]
+    # d : [4][b, 1, t]
+    #dense_factors = torch.tensor(dense_factors).to(device)
+    #upsample_scales = torch.tensor(upsample_scales).to(device)
+    #prod_upsample_scales = torch.cumprod(upsample_scales, dim=0)
+    prod_upsample_scales = np.cumprod(upsample_scales)
+    dfs_batch = []
+    for df, us in zip(dense_factors, prod_upsample_scales):
+      dilated_tensor = dilated_factor(f0, sample_rate, df)
+      #result += [torch.repeat_interleave(dilated_tensor, us, dim=1)]
+      result = [torch.stack([dilated_tensor for _ in range(us)], -1).reshape(dilated_tensor.shape[0], -1)]
+      #dfs_batch += [result]
+      dfs_batch.append(torch.cat(result, dim=0).unsqueeze(1))
+
+    in_batch = self.signal_generator(f0 * f0_scale)
+
+    return in_batch, dfs_batch
+
   def make_random_target_sids(self, target_ids, sid):
     # target_sids は target_ids をランダムで埋める
     target_sids = torch.zeros_like(sid)
@@ -401,8 +439,9 @@ class SynthesizerTrn(nn.Module):
         target_sids[i] = source_id
     return target_sids
 
-  def voice_conversion(self, y, y_lengths, sin, d, sid_src, sid_tgt):
+  def voice_conversion(self, y, y_lengths, f0, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."
+    sin, d = self.make_sin_d(f0)
     g_src = self.emb_g(sid_src).unsqueeze(-1)
     g_tgt = self.emb_g(sid_tgt).unsqueeze(-1)
     z, _, _, y_mask = self.enc_q(y, y_lengths, g=g_src)

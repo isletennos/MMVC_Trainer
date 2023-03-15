@@ -143,16 +143,15 @@ def save_vc_sample(hps, loader, collate, generator, name):
     train = False,
     f0_factor = f0_scale,
   )([data])
-  x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src, f0, f0_lengths, sin, d, slice_id = [x for x in data]
+  x, x_lengths, spec, spec_lengths, y, y_lengths, sid_src, f0, f0_lengths, cf0, cf0_lengths, slice_id = [x for x in data]
   for target_id in target_ids:
     with torch.no_grad():
       sid_tgt = torch.LongTensor([target_id]).cuda(0)
       sid_src = torch.LongTensor([sid_src]).cuda(0)
       spec = spec.cuda(0)
       spec_lengths = spec_lengths.cuda(0)
-      sin = sin.cuda(0)
-      d = tuple([d.cuda(0, non_blocking=True) for d in d])
-      audio = generator.module.voice_conversion(spec, spec_lengths, sin, d, sid_src=sid_src, sid_tgt=sid_tgt)[0][0,0].data.cpu().float().numpy()
+      f0 = f0.cuda(0)
+      audio = generator.module.voice_conversion(spec, spec_lengths, f0, sid_src=sid_src, sid_tgt=sid_tgt)[0][0,0].data.cpu().float().numpy()
 
     audio = audio * hps.data.max_wav_value
     wav = audio.astype(np.int16).tobytes()
