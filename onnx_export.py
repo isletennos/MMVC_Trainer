@@ -2,6 +2,7 @@ import os
 import argparse
 import time
 import json
+import numpy as np
 
 import onnx
 from onnxsim import simplify
@@ -69,10 +70,24 @@ def inspect_onnx(session):
         print("name:{}\tshape:{}\tdtype:{}".format(i.name, i.shape, i.type))
 
 
-def benchmark(session):
-    dummy_specs = torch.rand(1, 257, 64).numpy()
-    dummy_lengths = torch.LongTensor([64]).numpy()
-    dummy_f0 = torch.rand(1, 1, 64).numpy()
+def benchmark(session, hps, conf):
+    hop_length = hps.data.hop_length
+    delay_frames = conf.vc_conf.delay_flames
+    overlap_length = conf.vc_conf.overlap
+    dispose_stft_specs = conf.vc_conf.dispose_stft_specs
+    dispose_conv1d_specs = conf.vc_conf.dispose_conv1d_specs
+    dispose_specs =  dispose_stft_specs * 2 + dispose_conv1d_specs * 2
+    dispose_length = dispose_specs * hop_length
+    fixed_length = (delay_frames + dispose_length + overlap_length) // hop_length - dispose_stft_specs * 2
+    upsample_scales = hps.model.upsample_rates
+    prod_upsample_scales = np.cumprod(upsample_scales)
+    dummy_specs = torch.rand(1, 257, fixed_length).numpy()
+    dummy_lengths = torch.LongTensor([fixed_length]).numpy()
+    dummy_sin = torch.rand(1, 1, fixed_length * hop_length).numpy()
+    dummy_d0  = torch.rand(1, 1, fixed_length * prod_upsample_scales[0]).numpy()
+    dummy_d1  = torch.rand(1, 1, fixed_length * prod_upsample_scales[1]).numpy()
+    dummy_d2  = torch.rand(1, 1, fixed_length * prod_upsample_scales[2]).numpy()
+    dummy_d3  = torch.rand(1, 1, fixed_length * prod_upsample_scales[3]).numpy()
     dummy_sid_src = torch.LongTensor([0]).numpy()
     dummy_sid_tgt = torch.LongTensor([1]).numpy()
 
@@ -84,7 +99,11 @@ def benchmark(session):
             {
                 "specs": dummy_specs,
                 "lengths": dummy_lengths,
-                "f0": dummy_f0,
+                "sin": dummy_sin,
+                "d0": dummy_d0,
+                "d1": dummy_d1,
+                "d2": dummy_d2,
+                "d3": dummy_d3,
                 "sid_src": dummy_sid_src,
                 "sid_tgt": dummy_sid_tgt
             }
@@ -98,12 +117,11 @@ def benchmark(session):
 
 
 class OnnxSynthesizerTrn(SynthesizerTrn):
-    def forward(self, y, lengths, f0, sid_src, sid_tgt):
-        return self.voice_conversion(y, lengths, f0, sid_src, sid_tgt)
+    def forward(self, y, lengths, sin, d0, d1, d2, d3, sid_src, sid_tgt):
+        return self.voice_conversion(y, lengths, sin, (d0, d1, d2, d3), sid_src, sid_tgt)
 
-    def voice_conversion(self, y, lengths, f0, sid_src, sid_tgt):
+    def voice_conversion(self, y, lengths, sin, d, sid_src, sid_tgt):
         assert self.n_speakers > 0, "n_speakers have to be larger than 0."
-        sin, d = self.make_sin_d(f0)
         g_src = self.emb_g(sid_src).unsqueeze(-1)
         g_tgt = self.emb_g(sid_tgt).unsqueeze(-1)
         z, _, _, y_mask = self.enc_q(y, lengths, g=g_src)
@@ -115,6 +133,7 @@ class OnnxSynthesizerTrn(SynthesizerTrn):
 
 def main(args):
     hps = get_hparams_from_file(args.config_file)
+    conf = get_hparams_from_file("debug_test_15.conf")
     net_g = OnnxSynthesizerTrn(
         spec_channels = hps.data.filter_length // 2 + 1,
         segment_size = hps.train.segment_size // hps.data.hop_length,
@@ -141,30 +160,41 @@ def main(args):
     print("Model data loading succeeded.\nConverting start.")
 
     # Convert to ONNX
-    dirname = os.path.dirname(args.convert_pth)
-    filenames = os.path.splitext(os.path.basename(args.convert_pth))
-    onnx_file = os.path.join(dirname, filenames[0] + ".onnx")
-    dummy_specs = torch.rand(1, 257, 64)
-    dummy_lengths = torch.LongTensor([64])
-    dummy_f0 = torch.rand(1, 1, 64)
+    hop_length = hps.data.hop_length
+    delay_frames = conf.vc_conf.delay_flames
+    overlap_length = conf.vc_conf.overlap
+    dispose_stft_specs = conf.vc_conf.dispose_stft_specs
+    dispose_conv1d_specs = conf.vc_conf.dispose_conv1d_specs
+    dispose_specs =  dispose_stft_specs * 2 + dispose_conv1d_specs * 2
+    dispose_length = dispose_specs * hop_length
+    fixed_length = (delay_frames + dispose_length + overlap_length) // hop_length - dispose_stft_specs * 2
+    upsample_scales = hps.model.upsample_rates
+    prod_upsample_scales = np.cumprod(upsample_scales)
+    dummy_specs = torch.rand(1, 257, fixed_length)
+    dummy_lengths = torch.LongTensor([fixed_length])
+    dummy_sin = torch.rand(1, 1, fixed_length * hop_length)
+    dummy_d0  = torch.rand(1, 1, fixed_length * prod_upsample_scales[0])
+    dummy_d1  = torch.rand(1, 1, fixed_length * prod_upsample_scales[1])
+    dummy_d2  = torch.rand(1, 1, fixed_length * prod_upsample_scales[2])
+    dummy_d3  = torch.rand(1, 1, fixed_length * prod_upsample_scales[3])
     dummy_sid_src = torch.LongTensor([0])
     dummy_sid_tgt = torch.LongTensor([1])
 
+    dirname = os.path.dirname(args.convert_pth)
+    filenames = os.path.splitext(os.path.basename(args.convert_pth))
+    onnx_file = os.path.join(dirname, filenames[0] + ".onnx")
+
     torch.onnx.export(
         net_g,
-        #(dummy_specs, dummy_lengths, dummy_sin, dummy_d, dummy_sid_src, dummy_sid_tgt),
-        (dummy_specs, dummy_lengths, dummy_f0, dummy_sid_src, dummy_sid_tgt),
+        (dummy_specs, dummy_lengths, dummy_sin, dummy_d0, dummy_d1, dummy_d2, dummy_d3, dummy_sid_src, dummy_sid_tgt),
+        #(dummy_specs, dummy_lengths, dummy_f0, dummy_sid_src, dummy_sid_tgt),
         onnx_file,
         do_constant_folding=False,
         #opset_version=13,
         opset_version=17,
         verbose=False,
-        input_names=["specs", "lengths", "f0", "sid_src", "sid_tgt"],
-        output_names=["audio"],
-        dynamic_axes={
-            "specs": {2: "specs_length"},
-            "f0": {2: "f0_length"}
-        })
+        input_names=["specs", "lengths", "sin", "d0", "d1", "d2", "d3", "sid_src", "sid_tgt"],
+        output_names=["audio"])
     model_onnx2 = onnx.load(onnx_file)
     model_simp, check = simplify(model_onnx2)
     onnx.save(model_simp, onnx_file)
@@ -176,7 +206,7 @@ def main(args):
         providers=["CPUExecutionProvider"])
     inspect_onnx(ort_session_cpu)
     print("ONNX CPU")
-    benchmark(ort_session_cpu)
+    benchmark(ort_session_cpu, hps, conf)
 
 
 if __name__ == '__main__':
