@@ -448,7 +448,7 @@ class SynthesizerTrn(nn.Module):
     z_p = self.flow(z, y_mask, g=g_src)
     z_hat = self.flow(z_p, y_mask, g=g_tgt, reverse=True)
     o_hat = self.dec(sin, z_hat * y_mask, d, sid=g_tgt)
-    return o_hat
+    return o_hat[0]
 
   def voice_ra_pa_db(self, y, y_lengths, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."

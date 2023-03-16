@@ -99,11 +99,11 @@ def benchmark(session, hps, conf):
             {
                 "specs": dummy_specs,
                 "lengths": dummy_lengths,
-                "sin": dummy_sin,
-                "d0": dummy_d0,
-                "d1": dummy_d1,
-                "d2": dummy_d2,
-                "d3": dummy_d3,
+                "sin": dummy_sin * 100.0,
+                "d0": dummy_d0 * 100.0,
+                "d1": dummy_d1 * 100.0,
+                "d2": dummy_d2 * 100.0,
+                "d3": dummy_d3 * 100.0,
                 "sid_src": dummy_sid_src,
                 "sid_tgt": dummy_sid_tgt
             }
@@ -128,7 +128,7 @@ class OnnxSynthesizerTrn(SynthesizerTrn):
         z_p = self.flow(z, y_mask, g=g_src)
         z_hat = self.flow(z_p, y_mask, g=g_tgt, reverse=True)
         o_hat = self.dec(sin, z_hat * y_mask, d, sid=g_tgt)
-        return o_hat
+        return o_hat[0]
 
 
 def main(args):
@@ -172,11 +172,11 @@ def main(args):
     prod_upsample_scales = np.cumprod(upsample_scales)
     dummy_specs = torch.rand(1, 257, fixed_length)
     dummy_lengths = torch.LongTensor([fixed_length])
-    dummy_sin = torch.rand(1, 1, fixed_length * hop_length)
-    dummy_d0  = torch.rand(1, 1, fixed_length * prod_upsample_scales[0])
-    dummy_d1  = torch.rand(1, 1, fixed_length * prod_upsample_scales[1])
-    dummy_d2  = torch.rand(1, 1, fixed_length * prod_upsample_scales[2])
-    dummy_d3  = torch.rand(1, 1, fixed_length * prod_upsample_scales[3])
+    dummy_sin = torch.rand(1, 1, fixed_length * hop_length) * 100.0
+    dummy_d0  = torch.rand(1, 1, fixed_length * prod_upsample_scales[0]) * 100.0
+    dummy_d1  = torch.rand(1, 1, fixed_length * prod_upsample_scales[1]) * 100.0
+    dummy_d2  = torch.rand(1, 1, fixed_length * prod_upsample_scales[2]) * 100.0
+    dummy_d3  = torch.rand(1, 1, fixed_length * prod_upsample_scales[3]) * 100.0
     dummy_sid_src = torch.LongTensor([0])
     dummy_sid_tgt = torch.LongTensor([1])
 
@@ -189,7 +189,7 @@ def main(args):
         (dummy_specs, dummy_lengths, dummy_sin, dummy_d0, dummy_d1, dummy_d2, dummy_d3, dummy_sid_src, dummy_sid_tgt),
         #(dummy_specs, dummy_lengths, dummy_f0, dummy_sid_src, dummy_sid_tgt),
         onnx_file,
-        do_constant_folding=False,
+        #do_constant_folding=False,
         #opset_version=13,
         opset_version=17,
         verbose=False,

@@ -151,7 +151,7 @@ def save_vc_sample(hps, loader, collate, generator, name):
       spec = spec.cuda(0)
       spec_lengths = spec_lengths.cuda(0)
       f0 = f0.cuda(0)
-      audio = generator.module.voice_conversion(spec, spec_lengths, f0, sid_src=sid_src, sid_tgt=sid_tgt)[0][0,0].data.cpu().float().numpy()
+      audio = generator.module.voice_conversion(spec, spec_lengths, f0, sid_src=sid_src, sid_tgt=sid_tgt)[0,0].data.cpu().float().numpy()
 
     audio = audio * hps.data.max_wav_value
     wav = audio.astype(np.int16).tobytes()
