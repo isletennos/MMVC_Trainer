@@ -57,6 +57,7 @@ class HParams():
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_file", required=True)
+    parser.add_argument("--client_conf", required=True)
     parser.add_argument("--convert_pth", required=True)
     return parser.parse_args()
 
@@ -133,7 +134,7 @@ class OnnxSynthesizerTrn(SynthesizerTrn):
 
 def main(args):
     hps = get_hparams_from_file(args.config_file)
-    conf = get_hparams_from_file("debug_test_15.conf")
+    conf = get_hparams_from_file(args.client_conf)
     net_g = OnnxSynthesizerTrn(
         spec_channels = hps.data.filter_length // 2 + 1,
         segment_size = hps.train.segment_size // hps.data.hop_length,
