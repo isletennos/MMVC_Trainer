@@ -82,7 +82,8 @@ def benchmark(session, hps, conf):
     fixed_length = (delay_frames + dispose_length + overlap_length) // hop_length - dispose_stft_specs * 2
     upsample_scales = hps.model.upsample_rates
     prod_upsample_scales = np.cumprod(upsample_scales)
-    dummy_specs = torch.rand(1, 257, fixed_length).numpy()
+    spec_channels = hps.data.filter_length // 2 + 1
+    dummy_specs = torch.rand(1, spec_channels, fixed_length).numpy()
     dummy_lengths = torch.LongTensor([fixed_length]).numpy()
     dummy_sin = torch.rand(1, 1, fixed_length * hop_length).numpy()
     dummy_d0  = torch.rand(1, 1, fixed_length * prod_upsample_scales[0]).numpy()
@@ -135,8 +136,9 @@ class OnnxSynthesizerTrn(SynthesizerTrn):
 def main(args):
     hps = get_hparams_from_file(args.config_file)
     conf = get_hparams_from_file(args.client_conf)
+    spec_channels = hps.data.filter_length // 2 + 1
     net_g = OnnxSynthesizerTrn(
-        spec_channels = hps.data.filter_length // 2 + 1,
+        spec_channels = spec_channels,
         segment_size = hps.train.segment_size // hps.data.hop_length,
         inter_channels = hps.model.inter_channels,
         hidden_channels = hps.model.hidden_channels,
@@ -171,7 +173,7 @@ def main(args):
     fixed_length = (delay_frames + dispose_length + overlap_length) // hop_length - dispose_stft_specs * 2
     upsample_scales = hps.model.upsample_rates
     prod_upsample_scales = np.cumprod(upsample_scales)
-    dummy_specs = torch.rand(1, 257, fixed_length)
+    dummy_specs = torch.rand(1, spec_channels, fixed_length)
     dummy_lengths = torch.LongTensor([fixed_length])
     dummy_sin = torch.rand(1, 1, fixed_length * hop_length) * 100.0
     dummy_d0  = torch.rand(1, 1, fixed_length * prod_upsample_scales[0]) * 100.0
