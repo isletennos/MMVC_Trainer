@@ -301,7 +301,15 @@ class SynthesizerTrn(nn.Module):
     requires_grad_flow=True,
     requires_grad_text_enc=True,
     requires_grad_dec=True,
-    requires_grad_emb_g=True,):
+    requires_grad_emb_g=True,
+    sample_rate=24000,
+    hop_size=128,
+    sine_amp=0.1,
+    noise_amp=0.003,
+    signal_types=["sine"],
+    dense_factors=[0.5, 1, 4, 8],
+    upsample_scales=[8, 4, 2, 2],
+    ):
 
     super().__init__()
     self.spec_channels = spec_channels
@@ -319,6 +327,13 @@ class SynthesizerTrn(nn.Module):
     self.requires_grad_text_enc = requires_grad_text_enc
     self.requires_grad_dec = requires_grad_dec
     self.requires_grad_emb_g = requires_grad_emb_g
+    self.sample_rate = sample_rate
+    self.hop_size = hop_size
+    self.sine_amp = sine_amp
+    self.noise_amp = noise_amp
+    self.signal_types = signal_types
+    self.dense_factors = dense_factors
+    self.upsample_scales = upsample_scales
 
     self.enc_q = PosteriorEncoder(
         spec_channels, 
@@ -351,10 +366,10 @@ class SynthesizerTrn(nn.Module):
         gin_channels=gin_channels,
         requires_grad=requires_grad_flow)
     self.signal_generator = SignalGenerator(
-        sample_rate=24000,
-        hop_size=128,
-        noise_amp=0.0,
-        signal_types=["sine"]
+        sample_rate=sample_rate,
+        hop_size=hop_size,
+        noise_amp=noise_amp,
+        signal_types=signal_types
     )
 
     if n_speakers > 1:
@@ -399,30 +414,19 @@ class SynthesizerTrn(nn.Module):
 
     return (o, tgt_o), slice_id, x_mask, y_mask, ((z, z_p, m_p), logs_p, m_q, logs_q)
 
-  def make_sin_d(self,
-      f0,
-      f0_scale=1.0,
-      sample_rate=24000,
-      dense_factors=[0.5, 1, 4, 8],
-      upsample_scales=[8, 4, 2, 2]
-    ):
+  def make_sin_d(self, f0):
     # f0 から sin と d を作成
     # f0 : [b, 1, t]
     # sin : [b, 1, t]
     # d : [4][b, 1, t]
-    #dense_factors = torch.tensor(dense_factors).to(device)
-    #upsample_scales = torch.tensor(upsample_scales).to(device)
-    #prod_upsample_scales = torch.cumprod(upsample_scales, dim=0)
-    prod_upsample_scales = np.cumprod(upsample_scales)
+    prod_upsample_scales = np.cumprod(self.upsample_scales)
     dfs_batch = []
-    for df, us in zip(dense_factors, prod_upsample_scales):
-      dilated_tensor = dilated_factor(f0, sample_rate, df)
+    for df, us in zip(self.dense_factors, prod_upsample_scales):
+      dilated_tensor = dilated_factor(f0, self.sample_rate, df)
       #result += [torch.repeat_interleave(dilated_tensor, us, dim=1)]
       result = [torch.stack([dilated_tensor for _ in range(us)], -1).reshape(dilated_tensor.shape[0], -1)]
-      #dfs_batch += [result]
       dfs_batch.append(torch.cat(result, dim=0).unsqueeze(1))
-
-    in_batch = self.signal_generator(f0 * f0_scale)
+    in_batch = self.signal_generator(f0)
 
     return in_batch, dfs_batch
 
@@ -448,7 +452,7 @@ class SynthesizerTrn(nn.Module):
     z_p = self.flow(z, y_mask, g=g_src)
     z_hat = self.flow(z_p, y_mask, g=g_tgt, reverse=True)
     o_hat = self.dec(sin, z_hat * y_mask, d, sid=g_tgt)
-    return o_hat
+    return o_hat[0]
 
   def voice_ra_pa_db(self, y, y_lengths, sid_src, sid_tgt):
     assert self.n_speakers > 0, "n_speakers have to be larger than 0."

@@ -147,7 +147,14 @@ def run(rank, n_gpus, hps):
       requires_grad_flow = hps.requires_grad.flow,
       requires_grad_text_enc = hps.requires_grad.text_enc,
       requires_grad_dec = hps.requires_grad.dec,
-      requires_grad_emb_g = hps.requires_grad.emb_g
+      requires_grad_emb_g = hps.requires_grad.emb_g,
+      sample_rate = hps.data.sampling_rate,
+      hop_size = hps.data.hop_length,
+      sine_amp = hps.data.sine_amp,
+      noise_amp = hps.data.noise_amp,
+      signal_types = hps.data.signal_types,
+      dense_factors = hps.data.dense_factors,
+      upsample_scales = hps.model.upsample_rates,
       ).cuda(rank)
   #net_d = UnivNetMultiResolutionMultiPeriodDiscriminator().cuda(rank)
   net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm).cuda(rank)
@@ -248,8 +255,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     #SiFiGAN
     f0, f0_lengths = f0.cuda(rank, non_blocking=True), f0_lengths.cuda(rank, non_blocking=True)
     cf0, cf0_lengths = cf0.cuda(rank, non_blocking=True), cf0_lengths.cuda(rank, non_blocking=True)
-    #sin = sin.cuda(rank, non_blocking=True)
-    #d = tuple([d.cuda(rank, non_blocking=True) for d in d])
+    _f0 = f0 if hps.data.df_f0_type == "f0" else cf0
     slice_id = slice_id.cuda(rank, non_blocking=True)
 
     mel = spec_to_mel_torch_data(spec, hps.data)
@@ -258,7 +264,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
     with autocast(enabled=hps.train.fp16_run):
       (outs, tgt_outs), ids_slice, _, z_mask,\
-        ((z, z_p, m_p), logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, f0, slice_id, speakers, target_ids)
+        ((z, z_p, m_p), logs_p, m_q, logs_q) = net_g(x, x_lengths, spec, spec_lengths, _f0, slice_id, speakers, target_ids)
       y_mel = commons.slice_segments(mel, ids_slice, spec_segment_size)
     y_hat, y_reg = outs
     tgt_y_hat, tgt_y_reg = tgt_outs
