@@ -271,12 +271,12 @@ class TextAudioSpeakerCollate():
             #学習時 f0/cf0をSliceして格納、dilated_factorを求める
             if self.train:
                 f0 = row[4]
-                f0_padded[i, :, :f0.size(0)] = f0[start_frame : start_frame + self.max_frames]
-                f0_lengths[i] = f0.size(0)
+                f0_padded[i, :, :] = f0[start_frame : start_frame + self.max_frames]
+                f0_lengths[i] = self.max_frames
 
                 cf0 = row[5]
-                cf0_padded[i, :, :cf0.size(0)] = cf0[start_frame : start_frame + self.max_frames]
-                cf0_lengths[i] = cf0.size(0)
+                cf0_padded[i, :, :] = cf0[start_frame : start_frame + self.max_frames]
+                cf0_lengths[i] = self.max_frames
 
             #推論時 f0/cf0にf0の倍率を乗算してf0/cf0を求める
             else:
