@@ -268,6 +268,10 @@ class TextAudioSpeakerCollate():
 
             sid[i] = row[3]
 
+            #F0を抽出したときと音声サイズが異なるときに、f0/cf0がspecとずれるので、その対策
+            assert row[1].shape[1]==row[4].shape[0], "The lengths of F0 and spec are different."
+
+
             #学習時 f0/cf0をSliceして格納、dilated_factorを求める
             if self.train:
                 f0 = row[4]
