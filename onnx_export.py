@@ -193,8 +193,9 @@ def main(args):
         #(dummy_specs, dummy_lengths, dummy_f0, dummy_sid_src, dummy_sid_tgt),
         onnx_file,
         #do_constant_folding=False,
+        opset_version=11,
         #opset_version=13,
-        opset_version=17,
+        #opset_version=17,
         verbose=False,
         input_names=["specs", "lengths", "sin", "d0", "d1", "d2", "d3", "sid_src", "sid_tgt"],
         output_names=["audio"])
