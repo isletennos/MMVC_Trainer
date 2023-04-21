@@ -10,6 +10,6 @@ torch==1.13.1+cu117
 torchaudio==0.13.1+cu117
 Unidecode==1.1.1
 retry
-#tqdm
-#scipy==1.5.2
-#resampy==0.2.2
+onnx
+onnxsim
+onnxruntime
