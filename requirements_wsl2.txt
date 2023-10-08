@@ -17,4 +17,4 @@ resampy==0.2.2
 # Specific package for WSL2
 psutil
 protobuf==3.19.0
-numpy==1.22
+numpy==1.23.5
