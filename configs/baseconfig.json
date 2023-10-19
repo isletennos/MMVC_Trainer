@@ -55,8 +55,8 @@
     "n_speakers": 255
   },
   "model": {
-    "inter_channels": 256,
-    "hidden_channels": 256,
+    "inter_channels": 192,
+    "hidden_channels": 192,
     "upsample_rates": [
       8,
       4,
