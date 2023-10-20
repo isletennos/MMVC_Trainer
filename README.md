@@ -32,6 +32,7 @@ MMVC(以下本ソフトウェア)の利用規約は、基本的にMITライセ�
 [[利用規約](https://zunko.jp/guideline.html)][[ずんだもん 音声データ](https://drive.google.com/file/d/1h8Ajyvoig7Hl3LSSt2vYX0sUHX3JDF3R/view?usp=sharing)]　※本ソフトウェアに同梱しているものと同様の音声データになります  
 [[利用規約](https://zunko.jp/guideline.html)][[九州そら 音声データ](https://drive.google.com/file/d/1MXfMRG_sjbsaLihm7wEASG2PwuCponZF/view?usp=sharing)]  
 [[利用規約](https://zunko.jp/guideline.html)][[四国めたん 音声データ](https://drive.google.com/file/d/1iCrpzhqXm-0YdktOPM8M1pMtgQIDF3r4/view?usp=sharing)]  
+[[利用規約](https://zunko.jp/con_ongen_kiyaku.html)][[東北きりたん 音声データ](https://drive.google.com/file/d/1uI9aMZIRaV3NvKBuR7Xut_RlkOG7UxGX/view?usp=share_link)]  
 #### 春日部つむぎプロジェクト様
 [[利用規約](https://tsumugi-official.studio.site/rule)][[春日部つむぎ 音声データ](https://drive.google.com/file/d/14zE0F_5ZCQWXf6m6SUPF5Y3gpL6yb7zk/view?usp=sharing)]  
 
