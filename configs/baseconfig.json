@@ -40,7 +40,7 @@
     "mel_fmin": 0.0,
     "mel_fmax": null,
     "add_blank": true,
-    "n_speakers": 110,
+    "n_speakers": 255,
     "cleaned_text": false
   },
   "model": {
@@ -96,8 +96,8 @@
   "others": {
     "os_type": "linux",
     "input_filename": "dataset/textful/00_myvoice/wav/emotion002.wav",
-    "source_id":107,
-    "target_id":100
+    "source_id":0,
+    "target_id":101
   },
   "augmentation": {
     "enable"               : true,
