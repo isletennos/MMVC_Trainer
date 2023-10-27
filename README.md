@@ -35,10 +35,12 @@ MMVC(以下本ソフトウェア)の利用規約は、基本的にMITライセ�
 [[利用規約](https://zunko.jp/con_ongen_kiyaku.html)][[東北きりたん 音声データ](https://drive.google.com/file/d/1uI9aMZIRaV3NvKBuR7Xut_RlkOG7UxGX/view?usp=share_link)]  
 #### 春日部つむぎプロジェクト様
 [[利用規約](https://tsumugi-official.studio.site/rule)][[春日部つむぎ 音声データ](https://drive.google.com/file/d/14zE0F_5ZCQWXf6m6SUPF5Y3gpL6yb7zk/view?usp=sharing)]  
+#### 刻鳴時雨 様
+[[利用規約](https://bindumechan.wixsite.com/shigure222/term-of-use)][[刻鳴時雨 音声データ](https://drive.google.com/file/d/1VHGQAHyGf8b4-uaMJGED4irs9pdlFgRA/view?usp=drive_link)]  
 
 ### ライセンス表記について  
-ずんだもん/四国めたん/九州そら/春日部つむぎ  
-の3キャラクターを利用する場合に限り、下記ライセンスパターンに加えて、どのツールで作られた音声かわかるように  
+ずんだもん/四国めたん/九州そら/春日部つむぎ/刻鳴時雨/東北きりたん
+のキャラクターを利用する場合に限り、下記ライセンスパターンに加えて、どのツールで作られた音声かわかるように  
 ```
 MMVC:ずんだもん
 MMVC:ずんだもん/四国めたん
@@ -80,52 +82,40 @@ community(discord):https://discord.gg/2MGysH3QpD
 そのため、MMVCの利用規約とは別に[[ずんだもん 利用規約](https://zunko.jp/guideline.html)]を遵守する必要があります。
 #### Ph1. 自分の音声の録音と音声データの配置
 1. 自分の声の音声データを録音します。  
-    - notebookディレクトリにある「00_Rec_Voice.ipynb」から自分の音声を録音してください。
+    - notebookディレクトリにある「01_Rec_Voice.ipynb」から自分の音声を録音してください。
     - もしくは、自分のPCで録音してGoogle Drive上に配置してください。  
 JVSコーパスやITAコーパス等を台本にし、100文程度読み上げます。  
 また、録音した音声は**24000Hz 16bit 1ch**である必要があります。  
 ※MMVC用にテキストを分割したITAコーパスです。ご利用ください。  
 https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing  
 
-2. dataset/textful/000_myvoice に音声データとテキストデータを配置します。  
-    - 00_Rec_Voice.ipynbを利用して録音した場合はこのように配置されていますのでそのままで大丈夫です。  
+2. dataset/textful/00_myvoice に音声データとテキストデータを配置します。  
+    - 01_Rec_Voice.ipynbを利用して録音した場合はこのように配置されていますのでそのままで大丈夫です。  
     - 最終的に下記のようなディレクトリ構成になるようにファイルを配置してください。  
 ```
 dataset
-├── textful
-│   ├── 000_myvoice
-│   │   ├── text
-│   │   │   ├── s_voice_001.txt
-│   │   │   ├── s_voice_002.txt
-│   │   │   ├── ...
-│   │   └── wav
-│   │        ├── s_voice_001.wav
-│   │        ├── s_voice_002.wav
-│   │        ├── ...
-│   │── 001_target
-│   │   ├── text
-│   │   └── wav
-│   │
-│   └── 1205_zundamon
-│       ├── text
-│       │   ├── t_voice_001.txt
-│       │   ├── t_voice_002.txt
-│       │   ├── ...
-│       └── wav
-│            ├── t_voice_001.wav
-│            ├── t_voice_002.wav
-│            ├── ... 
-│        
-└── textless
+├── 00_myvoice
+│   └── wav
+│        ├── emoNormal_001.wav
+│        ├── emoNormal_002.wav
+│        ├── ...
+│── 01_target
+│   └── wav
+│
+└── 1205_zundamon
+    └── wav
+         ├── emoNormal_001.wav
+         ├── emoNormal_002.wav
+         ├── ... 
 ```
 
 #### Ph2. モデルの学習方法
 1. 事前学習済みデータを配置します。  
-    - 00_Clone_Repo.ipynbを使ってインストールした場合は既に事前学習済みデータも配置済みなのでそのままで大丈夫です。  
-    - 00_Clone_Repo.ipynbを利用しなかった場合や「fine_model」ディレクトリに下記ファイルが存在しなかった場合、以下の手順でファイルを配置してください。
-        1. 下記リンクより、「G_180000.pth」「D_180000.pth」をダウンロード。  
-https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sharing
-        2. 「G_180000.pth」「D_180000.pth」を「fine_model」ディレクトリに配置します。**(良く忘れるポイントなので要注意！)**  
+    - 01_Clone_Repo.ipynbを使ってインストールした場合は既に事前学習済みデータも配置済みなのでそのままで大丈夫です。  
+    - 01_Clone_Repo.ipynbを利用しなかった場合や「fine_model」ディレクトリに下記ファイルが存在しなかった場合、以下の手順でファイルを配置してください。
+        1. 下記リンクより、「G_v15_20231020.pth」「D_v15_20231020.pth」をダウンロード。  
+https://huggingface.co/MMVC/prelearned-model/tree/v1.5.x.x
+        2. 「G_v15_20231020.pth」「D_v15_20231020.pth」を「fine_model」ディレクトリに配置します。**(良く忘れるポイントなので要注意！)**  
 3. notebookディレクトリにある「Create_Configfile_zundamon.ipynb」をGoogle Colab 上で実行、学習に必要なconfigファイルを作成します  
 4. configsに作成されたtrain_config_zundamon.jsonの  
   
@@ -151,36 +141,18 @@ https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sha
 
 ```
 dataset
-├── textful
-│   ├── 000_myvoice
-│   │   ├── text
-│   │   │   ├── s_voice_001.txt
-│   │   │   ├── s_voice_002.txt
-│   │   │   ├── ...
-│   │   └── wav
-│   │        ├── s_voice_001.wav
-│   │        ├── s_voice_002.wav
-│   │        ├── ...
-│   │── 001_target
-│   │   ├── text
-│   │   │   ├── t_voice_001.txt
-│   │   │   ├── t_voice_002.txt
-│   │   │   ├── ...
-│   │   └── wav
-│   │        ├── t_voice_001.wav
-│   │        ├── t_voice_002.wav
-│   │        ├── ... 
-│   └── 1205_zundamon
-│       ├── text
-│       │   ├── t_voice_001.txt
-│       │   ├── t_voice_002.txt
-│       │   ├── ...
-│       └── wav
-│            ├── t_voice_001.wav
-│            ├── t_voice_002.wav
-│            ├── ... 
-│        
-└── textless
+├── 00_myvoice
+│   └── wav
+│        ├── emoNormal_001.wav
+│        ├── emoNormal_002.wav
+│        ├── ...
+│── 01_target
+│   └── wav
+│        ├── emoNormal_001.wav
+│        ├── emoNormal_002.wav
+│        ├── ... 
+└── 1205_zundamon
+    └──  ... 
 ```
 #### Ph2. モデルの学習方法
 以降、「チュートリアル : ずんだもんになる Ph2.」と同様のため割愛  
@@ -240,6 +212,11 @@ https://mmvc.readthedocs.io/ja/latest/index.html
 ## MMVCコミュニティサーバ(discord)
 開発の最新情報や、不明点のお問合せ、MMVCの活用法などMMVCに関するコミュニティサーバです。  
 https://discord.gg/2MGysH3QpD  
+
+## MMVC開発者問い合わせ(PIXIV FANBOX)
+MMVCに関する疑問・質問等の
+開発者への問い合わせは下記PIXIV FANBOXで受け付けています。
+https://mmvc.fanbox.cc/posts/6858033
 
 ## Special thanks
 - JVS (Japanese versatile speech) corpus  
