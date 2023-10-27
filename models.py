@@ -26,6 +26,7 @@ class TextEncoder(nn.Module):
     self.out_channels = out_channels
     self.hidden_channels = hidden_channels
     self.proj= nn.Conv1d(hidden_channels, out_channels * 2, 1)
+    self.emb_phone = nn.Conv1d(256, hidden_channels, 1)
     #パラメータを学習しない
     if requires_grad == False:
       for param in self.parameters():
@@ -33,6 +34,7 @@ class TextEncoder(nn.Module):
 
   def forward(self, x, x_lengths):
     x = torch.transpose(x.half(), 1, -1) # [b, h, t]
+    x = self.emb_phone(x)
     x_mask = torch.unsqueeze(commons.sequence_mask(x_lengths, x.size(2)), 1).to(x.dtype)
     stats = self.proj(x) * x_mask
     m, logs = torch.split(stats, self.out_channels, dim=1)
@@ -496,4 +498,3 @@ class SynthesizerTrn(nn.Module):
     self.enc_q.load_state_dict(enc_q)
     self.dec.load_state_dict(dec)
     self.emb_g.load_state_dict(emb_g)
-
