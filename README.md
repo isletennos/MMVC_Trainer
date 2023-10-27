@@ -35,10 +35,12 @@ MMVC(以下本ソフトウェア)の利用規約は、基本的にMITライセ�
 [[利用規約](https://zunko.jp/con_ongen_kiyaku.html)][[東北きりたん 音声データ](https://drive.google.com/file/d/1uI9aMZIRaV3NvKBuR7Xut_RlkOG7UxGX/view?usp=share_link)]  
 #### 春日部つむぎプロジェクト様
 [[利用規約](https://tsumugi-official.studio.site/rule)][[春日部つむぎ 音声データ](https://drive.google.com/file/d/14zE0F_5ZCQWXf6m6SUPF5Y3gpL6yb7zk/view?usp=sharing)]  
+#### 刻鳴時雨 様
+[[利用規約](https://bindumechan.wixsite.com/shigure222/term-of-use)][[刻鳴時雨 音声データ](https://drive.google.com/file/d/1VHGQAHyGf8b4-uaMJGED4irs9pdlFgRA/view?usp=drive_link)]  
 
 ### ライセンス表記について  
-ずんだもん/四国めたん/九州そら/春日部つむぎ  
-の3キャラクターを利用する場合に限り、下記ライセンスパターンに加えて、どのツールで作られた音声かわかるように  
+ずんだもん/四国めたん/九州そら/春日部つむぎ/刻鳴時雨/東北きりたん
+のキャラクターを利用する場合に限り、下記ライセンスパターンに加えて、どのツールで作られた音声かわかるように  
 ```
 MMVC:ずんだもん
 MMVC:ずんだもん/四国めたん
@@ -93,27 +95,27 @@ https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=shari
 ```
 dataset
 ├── textful
-│   ├── 000_myvoice
+│   ├── 00_myvoice
 │   │   ├── text
-│   │   │   ├── s_voice_001.txt
-│   │   │   ├── s_voice_002.txt
+│   │   │   ├── emoNormal_001.txt
+│   │   │   ├── emoNormal_002.txt
 │   │   │   ├── ...
 │   │   └── wav
-│   │        ├── s_voice_001.wav
-│   │        ├── s_voice_002.wav
+│   │        ├── emoNormal_001.wav
+│   │        ├── emoNormal_002.wav
 │   │        ├── ...
-│   │── 001_target
+│   │── 01_target
 │   │   ├── text
 │   │   └── wav
 │   │
 │   └── 1205_zundamon
 │       ├── text
-│       │   ├── t_voice_001.txt
-│       │   ├── t_voice_002.txt
+│       │   ├── emoNormal_001.txt
+│       │   ├── emoNormal_002.txt
 │       │   ├── ...
 │       └── wav
-│            ├── t_voice_001.wav
-│            ├── t_voice_002.wav
+│            ├── emoNormal_001.wav
+│            ├── emoNormal_002.wav
 │            ├── ... 
 │        
 └── textless
@@ -123,9 +125,9 @@ dataset
 1. 事前学習済みデータを配置します。  
     - 00_Clone_Repo.ipynbを使ってインストールした場合は既に事前学習済みデータも配置済みなのでそのままで大丈夫です。  
     - 00_Clone_Repo.ipynbを利用しなかった場合や「fine_model」ディレクトリに下記ファイルが存在しなかった場合、以下の手順でファイルを配置してください。
-        1. 下記リンクより、「G_180000.pth」「D_180000.pth」をダウンロード。  
-https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sharing
-        2. 「G_180000.pth」「D_180000.pth」を「fine_model」ディレクトリに配置します。**(良く忘れるポイントなので要注意！)**  
+        1. 下記リンクより、「G_v13_20231020.pth」「D_v13_20231020.pth」をダウンロード。  
+https://huggingface.co/MMVC/prelearned-model/tree/main
+        2. 「G_v13_20231020.pth」「D_v13_20231020.pth」を「fine_model」ディレクトリに配置します。**(良く忘れるポイントなので要注意！)**  
 3. notebookディレクトリにある「01_Create_Configfile.ipynb」をGoogle Colab 上で実行、学習に必要なconfigファイルを作成します  
 4. configsに作成されたtrain_config.jsonの  
   
@@ -152,33 +154,26 @@ https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sha
 ```
 dataset
 ├── textful
-│   ├── 000_myvoice
+│   ├── 00_myvoice
 │   │   ├── text
-│   │   │   ├── s_voice_001.txt
-│   │   │   ├── s_voice_002.txt
+│   │   │   ├── emoNormal_001.txt
+│   │   │   ├── emoNormal_002.txt
 │   │   │   ├── ...
 │   │   └── wav
-│   │        ├── s_voice_001.wav
-│   │        ├── s_voice_002.wav
+│   │        ├── emoNormal_001.wav
+│   │        ├── emoNormal_002.wav
 │   │        ├── ...
-│   │── 001_target
+│   │── 01_target
 │   │   ├── text
-│   │   │   ├── t_voice_001.txt
-│   │   │   ├── t_voice_002.txt
+│   │   │   ├── emoNormal_001.txt
+│   │   │   ├── emoNormal_002.txt
 │   │   │   ├── ...
 │   │   └── wav
-│   │        ├── t_voice_001.wav
-│   │        ├── t_voice_002.wav
+│   │        ├── emoNormal_001.wav
+│   │        ├── emoNormal_002.wav
 │   │        ├── ... 
 │   └── 1205_zundamon
-│       ├── text
-│       │   ├── t_voice_001.txt
-│       │   ├── t_voice_002.txt
-│       │   ├── ...
-│       └── wav
-│            ├── t_voice_001.wav
-│            ├── t_voice_002.wav
-│            ├── ... 
+│       ├── ... 
 │        
 └── textless
 ```
@@ -239,6 +234,11 @@ https://github.com/isletennos/MMVC_Trainer/wiki/FAQ
 ## MMVCコミュニティサーバ(discord)
 開発の最新情報や、不明点のお問合せ、MMVCの活用法などMMVCに関するコミュニティサーバです。  
 https://discord.gg/2MGysH3QpD  
+
+## MMVC開発者問い合わせ(PIXIV FANBOX)
+MMVCに関する疑問・質問等の
+開発者への問い合わせは下記PIXIV FANBOXで受け付けています。
+https://mmvc.fanbox.cc/posts/6858033
 
 ## Special thanks
 - JVS (Japanese versatile speech) corpus  
