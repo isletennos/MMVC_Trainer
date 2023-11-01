@@ -13,6 +13,6 @@ Unidecode==1.1.1
 retry
 tqdm
 resampy==0.2.2
-onnx
-onnxsim
-onnxruntime
+onnx==1.14.0
+onnxsim==0.4.30
+onnxruntime==1.15.0
