@@ -233,6 +233,11 @@ https://github.com/isletennos/MMVC_Trainer/wiki/FAQ
 開発の最新情報や、不明点のお問合せ、MMVCの活用法などMMVCに関するコミュニティサーバです。  
 https://discord.gg/2MGysH3QpD  
 
+## MMVC開発者問い合わせ(PIXIV FANBOX)
+MMVCに関する疑問・質問等の
+開発者への問い合わせは下記PIXIV FANBOXで受け付けています。
+https://mmvc.fanbox.cc/posts/6858033  
+
 ## Special thanks
 - JVS (Japanese versatile speech) corpus  
   contributors : 高道 慎之介様/三井 健太郎様/齋藤 佑樹様/郡山 知樹様/丹治 尚子様/猿渡 洋様  
