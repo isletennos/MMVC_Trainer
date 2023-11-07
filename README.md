@@ -37,8 +37,8 @@ MMVC(以下本ソフトウェア)の利用規約は、基本的にMITライセ�
 [[利用規約](https://tsumugi-official.studio.site/rule)][[春日部つむぎ 音声データ](https://drive.google.com/file/d/14zE0F_5ZCQWXf6m6SUPF5Y3gpL6yb7zk/view?usp=sharing)]  
 
 ### ライセンス表記について  
-ずんだもん/四国めたん/九州そら/春日部つむぎ  
-の3キャラクターを利用する場合に限り、下記ライセンスパターンに加えて、どのツールで作られた音声かわかるように  
+ずんだもん/四国めたん/九州そら/春日部つむぎ/東北きりたん
+のキャラクターを利用する場合に限り、下記ライセンスパターンに加えて、どのツールで作られた音声かわかるように  
 ```
 MMVC:ずんだもん
 MMVC:ずんだもん/四国めたん
@@ -87,33 +87,33 @@ JVSコーパスやITAコーパス等を台本にし、100文程度読み上げ�
 ※MMVC用にテキストを分割したITAコーパスです。ご利用ください。  
 https://drive.google.com/file/d/14oXoQqLxRkP8NJK8qMYGee1_q2uEED1z/view?usp=sharing  
 
-2. dataset/textful/000_myvoice に音声データとテキストデータを配置します。  
+2. dataset/textful/00_myvoice に音声データとテキストデータを配置します。  
     - 00_Rec_Voice.ipynbを利用して録音した場合はこのように配置されていますのでそのままで大丈夫です。  
     - 最終的に下記のようなディレクトリ構成になるようにファイルを配置してください。  
 ```
 dataset
 ├── textful
-│   ├── 000_myvoice
+│   ├── 00_myvoice
 │   │   ├── text
-│   │   │   ├── s_voice_001.txt
-│   │   │   ├── s_voice_002.txt
+│   │   │   ├── emoNormal_001.txt
+│   │   │   ├── emoNormal_002.txt
 │   │   │   ├── ...
 │   │   └── wav
-│   │        ├── s_voice_001.wav
-│   │        ├── s_voice_002.wav
+│   │        ├── emoNormal_001.wav
+│   │        ├── emoNormal_002.wav
 │   │        ├── ...
-│   │── 001_target
+│   │── 01_target
 │   │   ├── text
 │   │   └── wav
 │   │
 │   └── 1205_zundamon
 │       ├── text
-│       │   ├── t_voice_001.txt
-│       │   ├── t_voice_002.txt
+│       │   ├── emoNormal_001.txt
+│       │   ├── emoNormal_002.txt
 │       │   ├── ...
 │       └── wav
-│            ├── t_voice_001.wav
-│            ├── t_voice_002.wav
+│            ├── emoNormal_001.wav
+│            ├── emoNormal_002.wav
 │            ├── ... 
 │        
 └── textless
@@ -123,9 +123,9 @@ dataset
 1. 事前学習済みデータを配置します。  
     - 00_Clone_Repo.ipynbを使ってインストールした場合は既に事前学習済みデータも配置済みなのでそのままで大丈夫です。  
     - 00_Clone_Repo.ipynbを利用しなかった場合や「fine_model」ディレクトリに下記ファイルが存在しなかった場合、以下の手順でファイルを配置してください。
-        1. 下記リンクより、「G_180000.pth」「D_180000.pth」をダウンロード。  
-https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sharing
-        2. 「G_180000.pth」「D_180000.pth」を「fine_model」ディレクトリに配置します。**(良く忘れるポイントなので要注意！)**  
+        1. 下記リンクより、「G_v13_20231020.pth」「D_v13_20231020.pth」をダウンロード。  
+https://huggingface.co/MMVC/prelearned-model/tree/main
+        2. 「G_v13_20231020.pth」「D_v13_20231020.pth」を「fine_model」ディレクトリに配置します。**(良く忘れるポイントなので要注意！)**  
 3. notebookディレクトリにある「01_Create_Configfile.ipynb」をGoogle Colab 上で実行、学習に必要なconfigファイルを作成します  
 4. configsに作成されたtrain_config.jsonの  
   
@@ -152,33 +152,26 @@ https://drive.google.com/drive/folders/1vXdL1zSrgsuyACMkiTUtVbHgpMSA1Y5I?usp=sha
 ```
 dataset
 ├── textful
-│   ├── 000_myvoice
+│   ├── 00_myvoice
 │   │   ├── text
-│   │   │   ├── s_voice_001.txt
-│   │   │   ├── s_voice_002.txt
+│   │   │   ├── emoNormal_001.txt
+│   │   │   ├── emoNormal_002.txt
 │   │   │   ├── ...
 │   │   └── wav
-│   │        ├── s_voice_001.wav
-│   │        ├── s_voice_002.wav
+│   │        ├── emoNormal_001.wav
+│   │        ├── emoNormal_002.wav
 │   │        ├── ...
-│   │── 001_target
+│   │── 01_target
 │   │   ├── text
-│   │   │   ├── t_voice_001.txt
-│   │   │   ├── t_voice_002.txt
+│   │   │   ├── emoNormal_001.txt
+│   │   │   ├── emoNormal_002.txt
 │   │   │   ├── ...
 │   │   └── wav
-│   │        ├── t_voice_001.wav
-│   │        ├── t_voice_002.wav
+│   │        ├── emoNormal_001.wav
+│   │        ├── emoNormal_002.wav
 │   │        ├── ... 
 │   └── 1205_zundamon
-│       ├── text
-│       │   ├── t_voice_001.txt
-│       │   ├── t_voice_002.txt
-│       │   ├── ...
-│       └── wav
-│            ├── t_voice_001.wav
-│            ├── t_voice_002.wav
-│            ├── ... 
+│       ├── ... 
 │        
 └── textless
 ```
