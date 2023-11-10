@@ -8,6 +8,6 @@ torch==1.13.1+cu117
 torchaudio==0.13.1+cu117
 Unidecode==1.1.1
 retry
-onnx
-onnxsim
-onnxruntime
+onnx==1.14.0
+onnxsim==0.4.30
+onnxruntime==1.15.0
