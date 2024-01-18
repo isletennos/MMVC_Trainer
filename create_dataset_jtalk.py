@@ -5,6 +5,15 @@ import argparse
 import pyopenjtalk
 import json
 
+MY_ID = 0
+ZUNDAMON_ID = 101
+SORA_ID = 102
+METHANE_ID = 103
+TSUMUGI_ID = 104
+KIRITAN_ID = 106
+
+MAX_ID = 255
+
 def mozi2phone(mozi):
     text = pyopenjtalk.g2p(mozi)
     text = "sil " + text + " sil"
@@ -58,7 +67,7 @@ def create_dataset(filename):
             counter = counter +1
         Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
         speaker_id = speaker_id + 1
-        if speaker_id > 255:
+        if speaker_id > MAX_ID:
             break
 
     for d in textless_dir_list:
@@ -103,7 +112,7 @@ def create_dataset_zundamon(filename):
 
     #set list wav and text
     #myvoice
-    speaker_id = 0
+    speaker_id = MY_ID
     d = my_path
     wav_file_list = glob.glob(d + "/wav/*.wav")
     lab_file_list = glob.glob(d + "/text/*.txt")
@@ -127,7 +136,7 @@ def create_dataset_zundamon(filename):
         counter = counter +1
     Correspondence_list.append(str(speaker_id)+"|"+os.path.basename(d) + "\n")
 
-    speaker_id = 101
+    speaker_id = ZUNDAMON_ID
     d = zundamon_path
     wav_file_list = glob.glob(d + "/wav/*.wav")
     lab_file_list = glob.glob(d + "/text/*.txt")
@@ -175,7 +184,7 @@ def create_dataset_zundamon(filename):
         f.writelines(output_file_list_val_textless)
     with open('filelists/' + filename + '_Correspondence.txt', 'w', encoding='utf-8', newline='\n') as f:
         f.writelines(Correspondence_list)
-    return 255
+    return MAX_ID
 
 def create_dataset_character(filename, tid):
     textful_dir_list = glob.glob("dataset/textful/*")
@@ -193,7 +202,7 @@ def create_dataset_character(filename, tid):
 
     #set list wav and text
     #myvoice
-    speaker_id = 0
+    speaker_id = MY_ID
     d = my_path
     wav_file_list = glob.glob(d + "/wav/*.wav")
     lab_file_list = glob.glob(d + "/text/*.txt")
@@ -265,7 +274,7 @@ def create_dataset_character(filename, tid):
         f.writelines(output_file_list_val_textless)
     with open('filelists/' + filename + '_Correspondence.txt', 'w', encoding='utf-8', newline='\n') as f:
         f.writelines(Correspondence_list)
-    return 255
+    return MAX_ID
 
 def create_dataset_multi_character(filename, file_path):
     Correspondence_list = list()
@@ -311,7 +320,7 @@ def create_dataset_multi_character(filename, file_path):
         f.writelines(output_file_list_val_textless)
     with open('filelists/' + filename + '_Correspondence.txt', 'w', encoding='utf-8', newline='\n') as f:
         f.writelines(Correspondence_list)
-    return 255
+    return MAX_ID
 
 def main():
     parser = argparse.ArgumentParser()
@@ -320,9 +329,9 @@ def main():
     parser.add_argument('-s', '--sr', type=int, default=24000,
                         help='sampling rate (default = 24000)')
     parser.add_argument('-t', '--target', type=int, default=9999,
-                        help='pre_traind targetid (zundamon = 100, sora = 101, methane = 102, tsumugi = 103)')
+                        help='pre_traind targetid (zundamon = {ZUNDAMON_ID}, sora = {SORA_ID}, methane = {METHANE_ID}, tsumugi = {TSUMUGI_ID}, kiritan = {KIRITAN_ID})')
     parser.add_argument('-m', '--multi_target', type=str, default=None,
-                        help='pre_traind targetid (zundamon = 100, sora = 101, methane = 102, tsumugi = 103)')
+                        help='pre_traind targetid (zundamon = {ZUNDAMON_ID}, sora = {SORA_ID}, methane = {METHANE_ID}, tsumugi = {TSUMUGI_ID}, kiritan = {KIRITAN_ID})')
     parser.add_argument('-c', '--config', type=str, default="./configs/baseconfig.json",
                         help='JSON file for configuration')
     args = parser.parse_args()
@@ -330,7 +339,7 @@ def main():
     print(filename)
     if args.multi_target != None:
         n_spk = create_dataset_multi_character(filename, args.multi_target)
-    elif args.target != 9999 and args.target == 100:
+    elif args.target != 9999 and args.target == ZUNDAMON_ID:
         n_spk = create_dataset_zundamon(filename)
     elif args.target != 9999:
         n_spk = create_dataset_character(filename, args.target)
